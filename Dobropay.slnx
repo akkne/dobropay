@@ -8,6 +8,7 @@
     <Project Path="backend/Dobropay.Email/Dobropay.Email.csproj" />
     <Project Path="backend/Dobropay.Infrastructure/Dobropay.Infrastructure.csproj" />
     <Project Path="backend/Dobropay.MerchantAdmin/Dobropay.MerchantAdmin.csproj" />
+    <Project Path="backend/Dobropay.Messaging/Dobropay.Messaging.csproj" />
     <Project Path="backend/Dobropay.Notifications/Dobropay.Notifications.csproj" />
     <Project Path="backend/Dobropay.Payments/Dobropay.Payments.csproj" />
     <Project Path="backend/Dobropay.Receipts/Dobropay.Receipts.csproj" />
