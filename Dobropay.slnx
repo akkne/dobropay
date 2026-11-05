@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Dobropay.Api/Dobropay.Api.csproj" />
+    <Project Path="src/Dobropay.Core/Dobropay.Core.csproj" />
+    <Project Path="src/Dobropay.Infrastructure/Dobropay.Infrastructure.csproj" />
+    <Project Path="src/Dobropay.Setup/Dobropay.Setup.csproj" />
+    <Project Path="src/Dobropay.Worker/Dobropay.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dobropay.UnitTests/Dobropay.UnitTests.csproj" />
+  </Folder>
+</Solution>
