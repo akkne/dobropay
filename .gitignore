@@ -1,0 +1,14 @@
+.env
+.env.*
+!*.example
+*.session
+sessions/
+.idea/
+.vs/
+.vscode/
+**/bin/
+**/obj/
+TestResults/
+*.log
+*.db
+*.sqlite

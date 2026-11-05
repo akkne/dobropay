@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: dobropay
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dobropay"]
+      interval: 2s
+      retries: 30
+  setup:
+    build:
+      context: .
+      args:
+        PROJECT: src/Dobropay.Setup/Dobropay.Setup.csproj
+    command: Dobropay.Setup.dll
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Migration: Host=db;Database=dobropay;Username=postgres;Password=${POSTGRES_PASSWORD}
+      DEMO_KEY_A: ${DEMO_KEY_A}
+      DEMO_KEY_B: ${DEMO_KEY_B}
+      API_DB_PASSWORD: ${API_DB_PASSWORD}
+      WORKER_DB_PASSWORD: ${WORKER_DB_PASSWORD}
+      MIGRATOR_DB_PASSWORD: ${MIGRATOR_DB_PASSWORD}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      DEMO_WEBHOOK_URL: http://api:8080/local/webhooks/receiver
+  api:
+    build:
+      context: .
+      args:
+        PROJECT: src/Dobropay.Api/Dobropay.Api.csproj
+    command: Dobropay.Api.dll
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Api: Host=db;Database=dobropay;Username=dobropay_api;Password=${API_DB_PASSWORD}
+      CHECKOUT_SECRET: ${CHECKOUT_SECRET}
+      PROVIDER_SECRET: ${PROVIDER_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      Sandbox__Enabled: "true"
+      Sandbox__PublicBaseUrl: http://localhost:8080
+      Sandbox__InternalBaseUrl: http://api:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+  worker:
+    build:
+      context: .
+      args:
+        PROJECT: src/Dobropay.Worker/Dobropay.Worker.csproj
+    command: Dobropay.Worker.dll
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+    environment:
+      ConnectionStrings__Worker: Host=db;Database=dobropay;Username=dobropay_worker;Password=${WORKER_DB_PASSWORD}
+volumes:
+  postgres_data:
