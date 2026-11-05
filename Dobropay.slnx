@@ -1,8 +1,16 @@
 <Solution>
   <Folder Name="/backend/">
     <Project Path="backend/Dobropay.Api/Dobropay.Api.csproj" />
+    <Project Path="backend/Dobropay.Auth/Dobropay.Auth.csproj" />
+    <Project Path="backend/Dobropay.Contracts/Dobropay.Contracts.csproj" />
     <Project Path="backend/Dobropay.Core/Dobropay.Core.csproj" />
+    <Project Path="backend/Dobropay.DeveloperApi/Dobropay.DeveloperApi.csproj" />
+    <Project Path="backend/Dobropay.Email/Dobropay.Email.csproj" />
     <Project Path="backend/Dobropay.Infrastructure/Dobropay.Infrastructure.csproj" />
+    <Project Path="backend/Dobropay.MerchantAdmin/Dobropay.MerchantAdmin.csproj" />
+    <Project Path="backend/Dobropay.Notifications/Dobropay.Notifications.csproj" />
+    <Project Path="backend/Dobropay.Payments/Dobropay.Payments.csproj" />
+    <Project Path="backend/Dobropay.Receipts/Dobropay.Receipts.csproj" />
     <Project Path="backend/Dobropay.Setup/Dobropay.Setup.csproj" />
     <Project Path="backend/Dobropay.Worker/Dobropay.Worker.csproj" />
   </Folder>
