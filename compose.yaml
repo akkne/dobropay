@@ -17,7 +17,7 @@ services:
     build:
       context: .
       args:
-        PROJECT: src/Dobropay.Setup/Dobropay.Setup.csproj
+        PROJECT: backend/Dobropay.Setup/Dobropay.Setup.csproj
     command: Dobropay.Setup.dll
     depends_on:
       db:
@@ -35,7 +35,7 @@ services:
     build:
       context: .
       args:
-        PROJECT: src/Dobropay.Api/Dobropay.Api.csproj
+        PROJECT: backend/Dobropay.Api/Dobropay.Api.csproj
     command: Dobropay.Api.dll
     depends_on:
       setup:
@@ -55,7 +55,7 @@ services:
     build:
       context: .
       args:
-        PROJECT: src/Dobropay.Worker/Dobropay.Worker.csproj
+        PROJECT: backend/Dobropay.Worker/Dobropay.Worker.csproj
     command: Dobropay.Worker.dll
     depends_on:
       setup:

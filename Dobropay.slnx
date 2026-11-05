@@ -1,10 +1,10 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Dobropay.Api/Dobropay.Api.csproj" />
-    <Project Path="src/Dobropay.Core/Dobropay.Core.csproj" />
-    <Project Path="src/Dobropay.Infrastructure/Dobropay.Infrastructure.csproj" />
-    <Project Path="src/Dobropay.Setup/Dobropay.Setup.csproj" />
-    <Project Path="src/Dobropay.Worker/Dobropay.Worker.csproj" />
+  <Folder Name="/backend/">
+    <Project Path="backend/Dobropay.Api/Dobropay.Api.csproj" />
+    <Project Path="backend/Dobropay.Core/Dobropay.Core.csproj" />
+    <Project Path="backend/Dobropay.Infrastructure/Dobropay.Infrastructure.csproj" />
+    <Project Path="backend/Dobropay.Setup/Dobropay.Setup.csproj" />
+    <Project Path="backend/Dobropay.Worker/Dobropay.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Dobropay.UnitTests/Dobropay.UnitTests.csproj" />

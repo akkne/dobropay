@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Dobropay.Core\Dobropay.Core.csproj" />
+    <ProjectReference Include="..\..\backend\Dobropay.Core\Dobropay.Core.csproj" />
   </ItemGroup>
 
 </Project>
