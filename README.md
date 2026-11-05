@@ -46,4 +46,4 @@ dotnet build Dobropay.slnx -warnaserror
 dotnet test Dobropay.slnx --no-build
 ```
 
-Перед локальным коммитом выполняются сборка без предупреждений и тесты. Полный набор в CI запускается на PR и после мержа в `main`, без отдельного прогона после каждого коммита. Запуск миграций и сброс данных описаны в [локальной разработке](docs/local-development.md). Контракт API — в [docs/api.md](docs/api.md), OpenAPI — `http://localhost:8080/swagger/v1/swagger.json`.
+Перед локальным коммитом выполняются сборка без предупреждений и тесты. Обязательные правила коммитов, авторства и проверок находятся в [Git-процессе](docs/git-process.md) и закреплены в `AGENTS.md`. Автоматический прогон после каждого коммита не предусмотрен; при подключении CI проверки запускаются на PR и после мержа в `main`. Запуск миграций и сброс данных описаны в [локальной разработке](docs/local-development.md). Контракт API — в [docs/api.md](docs/api.md), OpenAPI — `http://localhost:8080/swagger/v1/swagger.json`.
