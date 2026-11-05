@@ -36,19 +36,21 @@ public sealed class Worker(IConfiguration configuration, ILogger<Worker> logger,
         if (row is null) return;
         var e = JsonSerializer.Deserialize<ProviderEvent>((string)row[2], JsonSerializerOptions.Web)!;
         var match = await Read(c, tx, "SELECT a.external_id,p.id,p.amount,p.currency,p.status FROM payment_attempts a JOIN payments p ON p.shop_id=a.shop_id AND p.id=a.payment_id WHERE a.id=$1 AND a.shop_id=$2 FOR UPDATE OF p,a", ct, e.AttemptId, shop);
-        if (match is null || match[0] is DBNull)
+        var snapshot = match is null ? null : new AttemptSnapshot(shop, (Guid)match[1], match[0] is DBNull ? null : (string)match[0], (long)match[2], (string)match[3], (string)match[4]);
+        var decision = PaymentConfirmation.Decide(e, snapshot);
+        if (decision == ConfirmationDecision.WaitForAttempt)
         {
             await Execute(c, tx, "UPDATE provider_inbox SET attempts=attempts+1,next_at=now()+make_interval(secs => LEAST(60, power(2,attempts+1)::int)),state=CASE WHEN attempts>=5 THEN 'failed' ELSE 'pending' END,error='attempt_not_ready' WHERE id=$1", ct, id);
             await tx.CommitAsync(ct); return;
         }
-        if ((string)match[0] != e.ExternalAttemptId || (long)match[2] != e.Amount || (string)match[3] != e.Currency || e.ShopId != shop)
+        if (decision == ConfirmationDecision.Reject)
         {
             await Execute(c, tx, "UPDATE provider_inbox SET state='rejected',error='data_mismatch',attempts=attempts+1 WHERE id=$1", ct, id);
             await tx.CommitAsync(ct); logger.LogWarning("Rejected provider event {EventId} shop {ShopId}", e.EventId, shop); return;
         }
-        if (PaymentRules.CanApply((string)match[4], e.Outcome))
+        if (decision == ConfirmationDecision.Apply)
         {
-            var paymentId = (Guid)match[1];
+            var paymentId = snapshot!.PaymentId;
             await Execute(c, tx, "UPDATE payments SET status=$1,updated_at=now() WHERE id=$2", ct, e.Outcome, paymentId);
             await Execute(c, tx, "UPDATE payment_attempts SET state=$1 WHERE id=$2", ct, e.Outcome, e.AttemptId);
             await Execute(c, tx, "INSERT INTO outbox_events(id,shop_id,payment_id,event_type,occurred_at,queued) VALUES ($1,$2,$3,$4,now(),false)", ct, Guid.NewGuid(), shop, paymentId, "payment." + e.Outcome);
