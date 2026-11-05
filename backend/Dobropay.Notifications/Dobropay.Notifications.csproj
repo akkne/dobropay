@@ -6,4 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Dobropay.Contracts/Dobropay.Contracts.csproj" />
+    <ProjectReference Include="../Dobropay.Messaging/Dobropay.Messaging.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+    <PackageReference Include="StackExchange.Redis" Version="3.4.29" />
+  </ItemGroup>
+
 </Project>
