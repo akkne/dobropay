@@ -14,7 +14,7 @@ docker compose down
 docker compose down -v  # удаляет только локальный том PostgreSQL
 ```
 
-Миграции применяются **до** старта API и Worker зависимостью Compose. Повторно применить их и обновить демо-данные: `docker compose run --rm setup`. Для новой модели: `dotnet ef migrations add <Name> --project src/Dobropay.Infrastructure --startup-project src/Dobropay.Infrastructure --output-dir Migrations`; миграция безопасности хранит SQL политик как встроенный ресурс `db/security.sql`.
+Миграции применяются **до** старта API и Worker зависимостью Compose. Первичная локальная инициализация выполняется bootstrap-подключением `postgres`; после неё создаётся отдельная роль `dobropay_migrator` с правом DDL, а таблицы принадлежат `dobropay_owner`. Runtime-роли этими правами не обладают. Повторно применить миграции и обновить демо-данные: `docker compose run --rm setup`. Для новой модели: `dotnet ef migrations add <Name> --project src/Dobropay.Infrastructure --startup-project src/Dobropay.Infrastructure --output-dir Migrations`; миграция безопасности хранит SQL политик как встроенный ресурс `db/security.sql`.
 
 ## Проверка RLS под runtime-ролью
 
