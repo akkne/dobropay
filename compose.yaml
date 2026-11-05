@@ -1,8 +1,7 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:17.6
     environment:
-      POSTGRES_DB: dobropay
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
@@ -10,9 +9,59 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d dobropay"]
-      interval: 2s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 3s
       retries: 30
+
+  kafka:
+    image: apache/kafka:4.1.2
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT://:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:19092 --list >/dev/null 2>&1"]
+      interval: 5s
+      retries: 40
+
+  kafka-init:
+    image: apache/kafka:4.1.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-ec"]
+    command: |
+      for topic in dobropay.provider-events.v1 dobropay.payment-events.v1 dobropay.dlq.payments-provider-events.v1 dobropay.dlq.notifications-payment-events.v1 dobropay.dlq.receipts-payment-events.v1; do
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic "$$topic" --partitions 3 --replication-factor 1
+      done
+
+  redis:
+    image: redis:7.4.12-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    ports:
+      - "127.0.0.1:8025:8025"
+
   setup:
     build:
       context: .
@@ -23,46 +72,177 @@ services:
       db:
         condition: service_healthy
     environment:
-      ConnectionStrings__Migration: Host=db;Database=dobropay;Username=postgres;Password=${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      AUTH_MIGRATOR_PASSWORD: ${AUTH_MIGRATOR_PASSWORD}
+      AUTH_RUNTIME_PASSWORD: ${AUTH_RUNTIME_PASSWORD}
+      DEVELOPER_API_MIGRATOR_PASSWORD: ${DEVELOPER_API_MIGRATOR_PASSWORD}
+      DEVELOPER_API_RUNTIME_PASSWORD: ${DEVELOPER_API_RUNTIME_PASSWORD}
+      PAYMENTS_MIGRATOR_PASSWORD: ${PAYMENTS_MIGRATOR_PASSWORD}
+      PAYMENTS_RUNTIME_PASSWORD: ${PAYMENTS_RUNTIME_PASSWORD}
+      NOTIFICATIONS_MIGRATOR_PASSWORD: ${NOTIFICATIONS_MIGRATOR_PASSWORD}
+      NOTIFICATIONS_RUNTIME_PASSWORD: ${NOTIFICATIONS_RUNTIME_PASSWORD}
+      RECEIPTS_MIGRATOR_PASSWORD: ${RECEIPTS_MIGRATOR_PASSWORD}
+      RECEIPTS_RUNTIME_PASSWORD: ${RECEIPTS_RUNTIME_PASSWORD}
+      DEMO_STAFF_PASSWORD: ${DEMO_STAFF_PASSWORD}
       DEMO_KEY_A: ${DEMO_KEY_A}
       DEMO_KEY_B: ${DEMO_KEY_B}
-      API_DB_PASSWORD: ${API_DB_PASSWORD}
-      WORKER_DB_PASSWORD: ${WORKER_DB_PASSWORD}
-      MIGRATOR_DB_PASSWORD: ${MIGRATOR_DB_PASSWORD}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
-      DEMO_WEBHOOK_URL: http://api:8080/local/webhooks/receiver
-  api:
+      DEMO_WEBHOOK_URL: http://notifications:8080/local/webhooks/receiver
+
+  auth:
     build:
       context: .
       args:
-        PROJECT: backend/Dobropay.Api/Dobropay.Api.csproj
-    command: Dobropay.Api.dll
+        PROJECT: backend/Dobropay.Auth/Dobropay.Auth.csproj
+    command: Dobropay.Auth.dll
     depends_on:
       setup:
         condition: service_completed_successfully
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Api: Host=db;Database=dobropay;Username=dobropay_api;Password=${API_DB_PASSWORD}
-      CHECKOUT_SECRET: ${CHECKOUT_SECRET}
-      PROVIDER_SECRET: ${PROVIDER_SECRET}
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
-      Sandbox__Enabled: "true"
-      Sandbox__PublicBaseUrl: http://localhost:8080
-      Sandbox__InternalBaseUrl: http://api:8080
-    ports:
-      - "127.0.0.1:8080:8080"
-  worker:
+      ConnectionStrings__Runtime: Host=db;Database=auth_db;Username=auth_runtime;Password=${AUTH_RUNTIME_PASSWORD}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+
+  developer-api:
     build:
       context: .
       args:
-        PROJECT: backend/Dobropay.Worker/Dobropay.Worker.csproj
-    command: Dobropay.Worker.dll
+        PROJECT: backend/Dobropay.DeveloperApi/Dobropay.DeveloperApi.csproj
+    command: Dobropay.DeveloperApi.dll
     depends_on:
       setup:
         condition: service_completed_successfully
-      api:
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Runtime: Host=db;Database=merchant_dev_db;Username=developer_api_runtime;Password=${DEVELOPER_API_RUNTIME_PASSWORD}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+
+  payments:
+    build:
+      context: .
+      args:
+        PROJECT: backend/Dobropay.Payments/Dobropay.Payments.csproj
+    command: Dobropay.Payments.dll
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      kafka-init:
+        condition: service_completed_successfully
+      developer-api:
         condition: service_started
     environment:
-      ConnectionStrings__Worker: Host=db;Database=dobropay;Username=dobropay_worker;Password=${WORKER_DB_PASSWORD}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Runtime: Host=db;Database=payments_db;Username=payments_runtime;Password=${PAYMENTS_RUNTIME_PASSWORD}
+      Services__DeveloperApi: http://developer-api:8080
+      Kafka__BootstrapServers: kafka:19092
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      CHECKOUT_SECRET: ${CHECKOUT_SECRET}
+      PROVIDER_SECRET: ${PROVIDER_SECRET}
+      Sandbox__Enabled: "true"
+      Sandbox__PublicBaseUrl: http://localhost:8080
+      Sandbox__InternalBaseUrl: http://payments:8080
+
+  notifications:
+    build:
+      context: .
+      args:
+        PROJECT: backend/Dobropay.Notifications/Dobropay.Notifications.csproj
+    command: Dobropay.Notifications.dll
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Runtime: Host=db;Database=notifications_db;Username=notifications_runtime;Password=${NOTIFICATIONS_RUNTIME_PASSWORD}
+      Kafka__BootstrapServers: kafka:19092
+      Redis__Connection: redis:6379
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      Sandbox__Enabled: "true"
+
+  email:
+    build:
+      context: .
+      args:
+        PROJECT: backend/Dobropay.Email/Dobropay.Email.csproj
+    command: Dobropay.Email.dll
+    depends_on:
+      mailpit:
+        condition: service_started
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      Smtp__Host: mailpit
+      Smtp__Port: 1025
+      Smtp__From: demo@dobropay.local
+
+  receipts:
+    build:
+      context: .
+      args:
+        PROJECT: backend/Dobropay.Receipts/Dobropay.Receipts.csproj
+    command: Dobropay.Receipts.dll
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      kafka-init:
+        condition: service_completed_successfully
+      email:
+        condition: service_started
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Runtime: Host=db;Database=receipts_db;Username=receipts_runtime;Password=${RECEIPTS_RUNTIME_PASSWORD}
+      Kafka__BootstrapServers: kafka:19092
+      Services__Email: http://email:8080
+      Demo__ReceiptEmail: demo-buyer@example.test
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+
+  merchant-admin:
+    build:
+      context: .
+      args:
+        PROJECT: backend/Dobropay.MerchantAdmin/Dobropay.MerchantAdmin.csproj
+    command: Dobropay.MerchantAdmin.dll
+    depends_on:
+      auth:
+        condition: service_started
+      developer-api:
+        condition: service_started
+      payments:
+        condition: service_started
+      notifications:
+        condition: service_started
+      receipts:
+        condition: service_started
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      Services__Auth: http://auth:8080
+      Services__DeveloperApi: http://developer-api:8080
+      Services__Payments: http://payments:8080
+      Services__Notifications: http://notifications:8080
+      Services__Receipts: http://receipts:8080
+
+  gateway:
+    image: caddy:2.10.2-alpine
+    depends_on:
+      auth:
+        condition: service_started
+      payments:
+        condition: service_started
+      merchant-admin:
+        condition: service_started
+      notifications:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+
 volumes:
   postgres_data:
+  kafka_data:

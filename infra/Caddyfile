@@ -1,0 +1,29 @@
+:8080 {
+    handle /v1/auth/* {
+        reverse_proxy auth:8080
+    }
+    handle /v1/admin/* {
+        reverse_proxy merchant-admin:8080
+    }
+    handle /v1/payments* {
+        reverse_proxy payments:8080
+    }
+    handle /checkout/* {
+        reverse_proxy payments:8080
+    }
+    handle /v1/provider/sandbox/events {
+        reverse_proxy payments:8080
+    }
+    handle /local/webhooks/received {
+        reverse_proxy notifications:8080
+    }
+    handle /health/live {
+        respond "live" 200
+    }
+    handle /health/ready {
+        reverse_proxy payments:8080
+    }
+    handle {
+        respond "not found" 404
+    }
+}

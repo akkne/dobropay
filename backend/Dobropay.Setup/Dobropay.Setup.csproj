@@ -1,7 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Dobropay.Infrastructure\Dobropay.Infrastructure.csproj" />
+    <ProjectReference Include="../Dobropay.Auth/Dobropay.Auth.csproj" />
+    <ProjectReference Include="../Dobropay.DeveloperApi/Dobropay.DeveloperApi.csproj" />
+    <ProjectReference Include="../Dobropay.Payments/Dobropay.Payments.csproj" />
+    <ProjectReference Include="../Dobropay.Notifications/Dobropay.Notifications.csproj" />
+    <ProjectReference Include="../Dobropay.Receipts/Dobropay.Receipts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
