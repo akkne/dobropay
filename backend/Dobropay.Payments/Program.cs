@@ -78,6 +78,25 @@ app.MapGet("/v1/payments/{id:guid}", async (HttpContext http, Guid id, PaymentsD
     return p is null ? Results.NotFound(new { error = "payment_not_found" }) : Results.Ok(new PaymentView(p.Id, p.Status, p.Amount, p.Currency, p.ExternalOrderId));
 }).WithTags("Payments").WithSummary("Get own payment").Produces<PaymentView>().Produces(401).Produces(404);
 
+app.MapGet("/internal/v1/shops/{shopId:guid}/payments/{id:guid}", async (HttpContext http, Guid shopId, Guid id, PaymentsDbContext db, CancellationToken ct) =>
+{
+    if (!InternalAuthorized(http)) return Results.Unauthorized();
+    await using var tx = await db.Database.BeginTransactionAsync(ct); await SetShop(db, shopId, ct);
+    var payment = await db.Payments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.ShopId == shopId, ct);
+    await tx.CommitAsync(ct);
+    return payment is null ? Results.NotFound() : Results.Ok(new PaymentView(payment.Id, payment.Status, payment.Amount, payment.Currency, payment.ExternalOrderId));
+});
+
+app.MapGet("/internal/v1/shops/{shopId:guid}/payments", async (HttpContext http, Guid shopId, PaymentsDbContext db, CancellationToken ct) =>
+{
+    if (!InternalAuthorized(http)) return Results.Unauthorized();
+    await using var tx = await db.Database.BeginTransactionAsync(ct); await SetShop(db, shopId, ct);
+    var payments = await db.Payments.AsNoTracking().Where(x => x.ShopId == shopId).OrderByDescending(x => x.CreatedAt)
+        .Take(100).Select(x => new PaymentView(x.Id, x.Status, x.Amount, x.Currency, x.ExternalOrderId)).ToListAsync(ct);
+    await tx.CommitAsync(ct);
+    return Results.Ok(payments);
+});
+
 app.MapGet("/checkout/{token}", async (string token, PaymentsDbContext db, CancellationToken ct) =>
 {
     var link = await Lookup(token, ct); if (link is null) return Results.NotFound();
@@ -197,6 +216,8 @@ async Task<Guid?> Authenticate(HttpContext http, CancellationToken ct)
     if (!response.IsSuccessStatusCode) return null;
     return (await response.Content.ReadFromJsonAsync<ResolvedShop>(cancellationToken: ct))?.ShopId;
 }
+bool InternalAuthorized(HttpContext http) => SandboxCrypto.Equal(
+    SandboxCrypto.Sha256(serviceKey), SandboxCrypto.Sha256(http.Request.Headers["X-Internal-Key"].ToString()));
 async Task<(Guid ShopId, Guid PaymentId, DateTimeOffset ExpiresAt)?> Lookup(string token, CancellationToken ct)
 {
     if (token.Length != 64) return null;
