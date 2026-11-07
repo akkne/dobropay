@@ -56,7 +56,12 @@ public sealed class ReceiptWorker(
             ?? throw new JsonException("Empty event");
 
         if (envelope.SchemaVersion != ContractVersions.EventSchema ||
-            envelope.EventType is not (KafkaContracts.PaymentSucceededType or KafkaContracts.PaymentCanceledType))
+            envelope.EventType is not (
+                KafkaContracts.PaymentWaitingForCaptureType or
+                KafkaContracts.PaymentSucceededType or
+                KafkaContracts.PaymentCanceledType or
+                KafkaContracts.RefundSucceededType or
+                KafkaContracts.RefundCanceledType))
         {
             throw new JsonException("Unsupported payment event");
         }
