@@ -35,6 +35,7 @@ builder.Services.AddSingleton<ICheckoutTokenGenerator>(provider =>
 builder.Services.AddSingleton<IPaymentProvider>(provider =>
     new SandboxProvider(options.ProviderSecret, provider.GetRequiredService<IHashProvider>()));
 builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+builder.Services.AddScoped<IPaymentCaptureService, PaymentCaptureService>();
 builder.Services.AddHttpClient<IDeveloperApiClient, DeveloperApiClient>();
 builder.Services.AddHostedService<PaymentEventWorker>();
 builder.Services.AddEndpointsApiExplorer();

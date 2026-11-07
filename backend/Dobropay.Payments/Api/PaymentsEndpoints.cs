@@ -64,7 +64,13 @@ public static class PaymentsEndpoints
 
             var normalizedOrderId = body.ExternalOrderId?.Trim();
             var fingerprint = hashProvider.ComputeSha256Hex(
-                JsonSerializer.Serialize(new { body.Amount, body.Currency, ExternalOrderId = normalizedOrderId }));
+                JsonSerializer.Serialize(new
+                {
+                    body.Amount,
+                    body.Currency,
+                    ExternalOrderId = normalizedOrderId,
+                    body.Capture
+                }));
 
             try
             {
@@ -86,13 +92,16 @@ public static class PaymentsEndpoints
                         : Results.Ok(BuildPaymentResponse(previousPayment, options, tokenGenerator));
                 }
 
+                var expiresAt = DateTimeOffset.UtcNow.AddMinutes(CheckoutLifetimeMinutes);
                 var payment = new Payment
                 {
                     Id = Guid.NewGuid(),
                     ShopId = shopId.Value,
                     Amount = body.Amount,
                     Currency = DomainConstants.DefaultCurrency,
-                    ExternalOrderId = normalizedOrderId
+                    ExternalOrderId = normalizedOrderId,
+                    Capture = body.Capture,
+                    ExpiresAt = expiresAt
                 };
                 var idempotencyRecord = new IdempotencyRecord
                 {
@@ -107,7 +116,7 @@ public static class PaymentsEndpoints
                     TokenHash = hashProvider.ComputeSha256Hex(tokenGenerator.GenerateToken(payment.Id)),
                     ShopId = shopId.Value,
                     PaymentId = payment.Id,
-                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(CheckoutLifetimeMinutes)
+                    ExpiresAt = expiresAt
                 };
 
                 await repository.AddPaymentAsync(payment, idempotencyRecord, checkoutLink, ct);
@@ -168,13 +177,91 @@ public static class PaymentsEndpoints
             var payment = await repository.FindPaymentByIdAsync(shopId.Value, id, ct);
             return payment is null
                 ? Results.NotFound(new { error = ErrorCodes.PaymentNotFound })
-                : Results.Ok(new PaymentView(payment.Id, payment.Status, payment.Amount, payment.Currency, payment.ExternalOrderId));
+                : Results.Ok(BuildPaymentView(payment));
         })
         .WithTags("Payments")
         .WithSummary("Get own payment")
         .Produces<PaymentView>()
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
+
+        app.MapPost(PublicRouteNames.PaymentCapture, async (
+            HttpContext http,
+            Guid id,
+            IDeveloperApiClient developerApiClient,
+            IPaymentCaptureService captureService,
+            CancellationToken ct) =>
+        {
+            var shopId = await developerApiClient.ResolveShopIdByApiKeyAsync(
+                http.Request.Headers[HttpHeaderNames.ApiKey].ToString(),
+                ct);
+            if (shopId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var idempotencyKey = http.Request.Headers[HttpHeaderNames.IdempotencyKey].ToString();
+            if (idempotencyKey.Length is < 1 or > MaxKeyOrOrderLength)
+            {
+                return Results.BadRequest(new { error = ErrorCodes.IdempotencyKeyRequired });
+            }
+
+            var body = await ReadOptionalBodyAsync<CapturePaymentRequest>(http.Request, ct) ?? new CapturePaymentRequest();
+            var result = await captureService.CaptureAsync(
+                shopId.Value,
+                id,
+                idempotencyKey,
+                body,
+                http.TraceIdentifier,
+                ct);
+            return MapOperationResult(result);
+        })
+        .WithTags("Payments")
+        .WithSummary("Capture a waiting_for_capture payment")
+        .Produces<PaymentView>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        app.MapPost(PublicRouteNames.PaymentCancel, async (
+            HttpContext http,
+            Guid id,
+            IDeveloperApiClient developerApiClient,
+            IPaymentCaptureService captureService,
+            CancellationToken ct) =>
+        {
+            var shopId = await developerApiClient.ResolveShopIdByApiKeyAsync(
+                http.Request.Headers[HttpHeaderNames.ApiKey].ToString(),
+                ct);
+            if (shopId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var idempotencyKey = http.Request.Headers[HttpHeaderNames.IdempotencyKey].ToString();
+            if (idempotencyKey.Length is < 1 or > MaxKeyOrOrderLength)
+            {
+                return Results.BadRequest(new { error = ErrorCodes.IdempotencyKeyRequired });
+            }
+
+            var body = await ReadOptionalBodyAsync<CancelPaymentRequest>(http.Request, ct) ?? new CancelPaymentRequest();
+            var result = await captureService.CancelAsync(
+                shopId.Value,
+                id,
+                idempotencyKey,
+                body,
+                http.TraceIdentifier,
+                ct);
+            return MapOperationResult(result);
+        })
+        .WithTags("Payments")
+        .WithSummary("Cancel a pending or waiting_for_capture payment")
+        .Produces<PaymentView>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         app.MapGet(InternalRouteNames.ShopPaymentById, async (
             HttpContext http,
@@ -192,7 +279,7 @@ public static class PaymentsEndpoints
             var payment = await repository.FindPaymentByIdAsync(shopId, id, ct);
             return payment is null
                 ? Results.NotFound()
-                : Results.Ok(new PaymentView(payment.Id, payment.Status, payment.Amount, payment.Currency, payment.ExternalOrderId));
+                : Results.Ok(BuildPaymentView(payment));
         });
 
         app.MapGet(InternalRouteNames.ShopPayments, async (
@@ -209,6 +296,66 @@ public static class PaymentsEndpoints
 
             var payments = await repository.ListShopPaymentsAsync(shopId, DefaultPaymentsListLimit, ct);
             return Results.Ok(payments);
+        });
+
+        app.MapPost(InternalRouteNames.ShopPaymentCapture, async (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IInternalKeyValidator keyValidator,
+            IPaymentCaptureService captureService,
+            CancellationToken ct) =>
+        {
+            if (!keyValidator.IsValid(http.Request.Headers[HttpHeaderNames.InternalKey]))
+            {
+                return Results.Unauthorized();
+            }
+
+            var idempotencyKey = ResolveInternalIdempotencyKey(http.Request);
+            if (idempotencyKey is null)
+            {
+                return Results.BadRequest(new { error = ErrorCodes.IdempotencyKeyRequired });
+            }
+
+            var body = await ReadOptionalBodyAsync<CapturePaymentRequest>(http.Request, ct) ?? new CapturePaymentRequest();
+            var result = await captureService.CaptureAsync(
+                shopId,
+                id,
+                idempotencyKey,
+                body,
+                http.TraceIdentifier,
+                ct);
+            return MapOperationResult(result);
+        });
+
+        app.MapPost(InternalRouteNames.ShopPaymentCancel, async (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IInternalKeyValidator keyValidator,
+            IPaymentCaptureService captureService,
+            CancellationToken ct) =>
+        {
+            if (!keyValidator.IsValid(http.Request.Headers[HttpHeaderNames.InternalKey]))
+            {
+                return Results.Unauthorized();
+            }
+
+            var idempotencyKey = ResolveInternalIdempotencyKey(http.Request);
+            if (idempotencyKey is null)
+            {
+                return Results.BadRequest(new { error = ErrorCodes.IdempotencyKeyRequired });
+            }
+
+            var body = await ReadOptionalBodyAsync<CancelPaymentRequest>(http.Request, ct) ?? new CancelPaymentRequest();
+            var result = await captureService.CancelAsync(
+                shopId,
+                id,
+                idempotencyKey,
+                body,
+                http.TraceIdentifier,
+                ct);
+            return MapOperationResult(result);
         });
 
         app.MapGet(PublicRouteNames.CheckoutByToken, async (
@@ -475,7 +622,69 @@ public static class PaymentsEndpoints
             payment.Status,
             payment.Amount,
             payment.Currency,
-            options.PublicBaseUrl + PublicRouteNames.CheckoutPrefix + tokenGenerator.GenerateToken(payment.Id));
+            options.PublicBaseUrl + PublicRouteNames.CheckoutPrefix + tokenGenerator.GenerateToken(payment.Id),
+            payment.Capture,
+            payment.CapturedAmount,
+            payment.RefundedAmount);
+
+    private static PaymentView BuildPaymentView(Payment payment) =>
+        new(
+            payment.Id,
+            payment.Status,
+            payment.Amount,
+            payment.Currency,
+            payment.ExternalOrderId,
+            payment.Capture,
+            payment.CapturedAmount,
+            payment.RefundedAmount,
+            payment.CancellationParty,
+            payment.CancellationReason);
+
+    private static string? ResolveInternalIdempotencyKey(HttpRequest request)
+    {
+        var key = request.Headers[HttpHeaderNames.IdempotencyKey].ToString();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return Guid.NewGuid().ToString("N");
+        }
+
+        return key.Length > MaxKeyOrOrderLength ? null : key;
+    }
+
+    private static async Task<T?> ReadOptionalBodyAsync<T>(HttpRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ContentLength == 0)
+        {
+            return default;
+        }
+
+        using var stream = new MemoryStream();
+        await request.Body.CopyToAsync(stream, cancellationToken);
+        if (stream.Length == 0)
+        {
+            return default;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(stream.ToArray(), JsonSerializerOptions.Web);
+        }
+        catch (JsonException)
+        {
+            return default;
+        }
+    }
+
+    private static IResult MapOperationResult(PaymentOperationResult result) =>
+        result.Outcome switch
+        {
+            PaymentOperationOutcome.Success => Results.Ok(result.Payment),
+            PaymentOperationOutcome.NotFound => Results.NotFound(new { error = result.ErrorCode ?? ErrorCodes.PaymentNotFound }),
+            PaymentOperationOutcome.IdempotencyConflict => Results.Conflict(new { error = result.ErrorCode ?? ErrorCodes.IdempotencyConflict }),
+            PaymentOperationOutcome.InvalidState => Results.Conflict(new { error = result.ErrorCode }),
+            PaymentOperationOutcome.InvalidAmount => Results.BadRequest(new { error = result.ErrorCode }),
+            _ => Results.StatusCode(StatusCodes.Status500InternalServerError)
+        };
 
     private static async Task<CheckoutLink?> ResolveCheckoutLinkAsync(
         string token,

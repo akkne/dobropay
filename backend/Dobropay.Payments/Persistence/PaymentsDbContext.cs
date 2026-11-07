@@ -10,6 +10,7 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<ProviderInbox> ProviderInbox => Set<ProviderInbox>();
     public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
+    public DbSet<Refund> Refunds => Set<Refund>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,11 +19,17 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
             entity.ToTable(PaymentsSchemaConstants.PaymentsTable).HasKey(x => x.Id);
             entity.HasAlternateKey(x => new { x.ShopId, x.Id });
             entity.HasIndex(x => new { x.ShopId, x.CreatedAt });
+            entity.HasIndex(x => new { x.Status, x.ExpiresAt });
+            entity.Property(x => x.Capture).HasDefaultValue(true);
+            entity.Property(x => x.RefundedAmount).HasDefaultValue(0L);
+            entity.Property(x => x.ExpiresAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
             entity.Property(x => x.CreatedAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
             entity.Property(x => x.UpdatedAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
             entity.Property(x => x.Currency).HasMaxLength(PaymentsSchemaConstants.CurrencyMaxLength);
             entity.Property(x => x.Status).HasMaxLength(PaymentsSchemaConstants.StatusMaxLength);
             entity.Property(x => x.ExternalOrderId).HasMaxLength(PaymentsSchemaConstants.ExternalOrderIdMaxLength);
+            entity.Property(x => x.CancellationParty).HasMaxLength(PaymentsSchemaConstants.CancellationPartyMaxLength);
+            entity.Property(x => x.CancellationReason).HasMaxLength(PaymentsSchemaConstants.CancellationReasonMaxLength);
         });
 
         modelBuilder.Entity<CheckoutLink>(entity =>
@@ -72,6 +79,8 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
             entity.HasIndex(x => new { x.Published, x.OccurredAt });
             entity.Property(x => x.Envelope).HasColumnType(PaymentsSchemaConstants.JsonbColumnType);
         });
+
+        modelBuilder.ApplyConfiguration(new RefundConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

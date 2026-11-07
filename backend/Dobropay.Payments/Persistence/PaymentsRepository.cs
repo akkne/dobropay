@@ -34,7 +34,17 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
             .Where(x => x.ShopId == shopId)
             .OrderByDescending(x => x.CreatedAt)
             .Take(limit)
-            .Select(x => new PaymentView(x.Id, x.Status, x.Amount, x.Currency, x.ExternalOrderId))
+            .Select(x => new PaymentView(
+                x.Id,
+                x.Status,
+                x.Amount,
+                x.Currency,
+                x.ExternalOrderId,
+                x.Capture,
+                x.CapturedAmount,
+                x.RefundedAmount,
+                x.CancellationParty,
+                x.CancellationReason))
             .ToListAsync(cancellationToken);
 
     public Task<CheckoutLink?> FindCheckoutLinkAsync(string tokenHash, CancellationToken cancellationToken) =>
@@ -79,6 +89,11 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
         await dbContext.IdempotencyRecords.AddAsync(idempotencyRecord, cancellationToken);
         await dbContext.CheckoutLinks.AddAsync(checkoutLink, cancellationToken);
     }
+
+    public async Task AddIdempotencyRecordAsync(
+        IdempotencyRecord record,
+        CancellationToken cancellationToken) =>
+        await dbContext.IdempotencyRecords.AddAsync(record, cancellationToken);
 
     public async Task AddAttemptAsync(PaymentAttempt attempt, CancellationToken cancellationToken) =>
         await dbContext.PaymentAttempts.AddAsync(attempt, cancellationToken);
