@@ -19,6 +19,11 @@ public static class PublicRouteNames
     public const string CheckoutStart = "/checkout/{token}/start";
     public const string CheckoutSimulate = "/checkout/{token}/simulate/{outcome}";
     public const string ProviderSandboxEvents = "/v1/provider/sandbox/events";
+    public const string ProviderSbpEvents = "/v1/provider/sbp/events";
+    public const string ProviderCard3dsCallback = "/v1/provider/card/3ds-callback";
+    public const string ProviderCryptoEvents = "/v1/provider/crypto/events";
+    public const string PaymentMethods = "/v1/payment-methods";
+    public const string PaymentMethodById = "/v1/payment-methods/{id:guid}";
     public const string LocalWebhookReceiver = "/local/webhooks/receiver";
     public const string LocalWebhooksReceived = "/local/webhooks/received";
     public const string AdminShopPayments = "/v1/admin/shops/{shopId:guid}/payments";
