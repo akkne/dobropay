@@ -28,4 +28,8 @@ public static class ConfigurationKeyNames
     public const string ReconciliationAttemptStaleSeconds = "Reconciliation:AttemptStaleSeconds";
     public const string PaymentExpirationMinutes = "Payments:ExpirationMinutes";
     public const string PaymentCaptureExpirationMinutes = "Payments:CaptureExpirationMinutes";
+    public const string FiscalProviderMode = "Fiscal:ProviderMode";
+    public const string FiscalCloudKktBaseUrl = "Fiscal:CloudKktBaseUrl";
+    public const string FiscalCloudKktApiKey = "Fiscal:CloudKktApiKey";
+    public const string FiscalOfdBaseUrl = "Fiscal:OfdBaseUrl";
 }

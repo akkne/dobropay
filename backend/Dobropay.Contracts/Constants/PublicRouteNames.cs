@@ -34,4 +34,6 @@ public static class PublicRouteNames
     public const string AdminShopRefunds = "/v1/admin/shops/{shopId:guid}/refunds";
     public const string AdminShopDeliveries = "/v1/admin/shops/{shopId:guid}/deliveries";
     public const string AdminShopReceipts = "/v1/admin/shops/{shopId:guid}/receipts";
+    public const string ReceiptsLookup = "/v1/receipts/lookup";
+    public const string ReceiptById = "/v1/receipts/{id:guid}";
 }

@@ -17,6 +17,7 @@ public static class InternalRouteNames
     public const string ShopDeliveries = "/internal/v1/shops/{shopId:guid}/deliveries";
     public const string ShopSubscriptions = "/internal/v1/shops/{shopId:guid}/subscriptions";
     public const string ShopReceipts = "/internal/v1/shops/{shopId:guid}/receipts";
+    public const string ShopPaymentReceiptContext = "/internal/v1/shops/{shopId:guid}/payments/{paymentId:guid}/receipt-context";
     public const string SendEmail = "/internal/v1/email";
     public const string PaymentsSuffix = "payments";
     public const string RefundsSuffix = "refunds";
@@ -25,4 +26,5 @@ public static class InternalRouteNames
     public const string DeliveriesSuffix = "deliveries";
     public const string SubscriptionsSuffix = "subscriptions";
     public const string ReceiptsSuffix = "receipts";
+    public const string ReceiptContextSuffix = "receipt-context";
 }
