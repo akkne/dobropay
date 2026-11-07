@@ -41,8 +41,30 @@ builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddInternalSecurity(builder.Configuration);
 builder.Services.AddSingleton<ICheckoutTokenGenerator>(provider =>
     new CheckoutTokenGenerator(options.CheckoutSecret, provider.GetRequiredService<IHashProvider>()));
-builder.Services.AddSingleton<IPaymentProvider>(provider =>
+builder.Services.AddSingleton<ISbpQrGenerator, SbpQrGenerator>();
+builder.Services.AddSingleton<ICryptoExchangeRateProvider, CryptoExchangeRateProvider>();
+builder.Services.AddSingleton(provider =>
     new SandboxProvider(options.ProviderSecret, provider.GetRequiredService<IHashProvider>()));
+builder.Services.AddSingleton(provider =>
+    new SbpPaymentProvider(
+        options.ProviderSecret,
+        provider.GetRequiredService<IHashProvider>(),
+        provider.GetRequiredService<ISbpQrGenerator>()));
+builder.Services.AddSingleton(provider =>
+    new BankCardPaymentProvider(
+        options.ProviderSecret,
+        options.PublicBaseUrl,
+        provider.GetRequiredService<IHashProvider>()));
+builder.Services.AddSingleton(provider =>
+    new CryptoPaymentProvider(
+        options.ProviderSecret,
+        provider.GetRequiredService<IHashProvider>(),
+        provider.GetRequiredService<ICryptoExchangeRateProvider>()));
+builder.Services.AddSingleton<IPaymentProvider>(provider => provider.GetRequiredService<SbpPaymentProvider>());
+builder.Services.AddSingleton<IPaymentProvider>(provider => provider.GetRequiredService<BankCardPaymentProvider>());
+builder.Services.AddSingleton<IPaymentProvider>(provider => provider.GetRequiredService<CryptoPaymentProvider>());
+builder.Services.AddSingleton<IPaymentProvider>(provider => provider.GetRequiredService<SandboxProvider>());
+builder.Services.AddSingleton<IPaymentProviderRouter, PaymentProviderRouter>();
 builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IPaymentCaptureService, PaymentCaptureService>();

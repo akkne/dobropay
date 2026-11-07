@@ -9,6 +9,7 @@ public static class PaymentsSchemaConstants
     public const string ProviderInboxTable = "provider_inbox";
     public const string OutboxEventsTable = "outbox_events";
     public const string RefundsTable = "refunds";
+    public const string SavedPaymentMethodsTable = "saved_payment_methods";
     public const string JsonbColumnType = "jsonb";
     public const string NowDefaultValueExpression = "now()";
     public const int CurrencyMaxLength = 3;
@@ -17,4 +18,16 @@ public static class PaymentsSchemaConstants
     public const int CancellationPartyMaxLength = 32;
     public const int CancellationReasonMaxLength = 64;
     public const int RefundReasonMaxLength = 200;
+    public const int PaymentMethodTypeMaxLength = 32;
+    public const int ConfirmationTypeMaxLength = 32;
+    public const int CardFirst6MaxLength = 6;
+    public const int CardLast4MaxLength = 4;
+    public const int CardBrandMaxLength = 32;
+    public const int ProviderTokenMaxLength = 128;
+    public const int SbpIdMaxLength = 64;
+    public const int CryptoCurrencyMaxLength = 16;
+    public const int CryptoNetworkMaxLength = 32;
+    public const int CryptoAmountMaxLength = 64;
+    public const int DepositAddressMaxLength = 128;
+    public const int TxHashMaxLength = 128;
 }

@@ -11,6 +11,7 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
     public List<PaymentAttempt> Attempts { get; } = [];
     public List<ProviderInbox> InboxItems { get; } = [];
     public List<OutboxEvent> OutboxEvents { get; } = [];
+    public List<SavedPaymentMethod> SavedPaymentMethods { get; } = [];
 
     public Task<IdempotencyRecord?> FindIdempotencyRecordAsync(
         Guid shopId,
@@ -148,6 +149,39 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
     public Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
     {
         OutboxEvents.Add(outboxEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task<SavedPaymentMethod?> FindSavedPaymentMethodAsync(
+        Guid shopId,
+        Guid methodId,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(SavedPaymentMethods.SingleOrDefault(x => x.ShopId == shopId && x.Id == methodId));
+
+    public Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(
+        Guid shopId,
+        int limit,
+        CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SavedPaymentMethodView>>(SavedPaymentMethods
+            .Where(x => x.ShopId == shopId)
+            .OrderByDescending(x => x.SavedAt)
+            .Take(limit)
+            .Select(x => new SavedPaymentMethodView(
+                x.Id,
+                x.Type,
+                x.CardFirst6,
+                x.CardLast4,
+                x.ExpiryMonth,
+                x.ExpiryYear,
+                x.CardBrand,
+                x.SavedAt))
+            .ToList());
+
+    public Task AddSavedPaymentMethodAsync(
+        SavedPaymentMethod method,
+        CancellationToken cancellationToken)
+    {
+        SavedPaymentMethods.Add(method);
         return Task.CompletedTask;
     }
 

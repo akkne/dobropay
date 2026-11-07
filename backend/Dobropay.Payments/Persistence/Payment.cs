@@ -18,6 +18,11 @@ public sealed class Payment
     public DateTimeOffset ExpiresAt { get; set; } = DateTimeOffset.UtcNow.AddMinutes(30);
     public string? CancellationParty { get; set; } = null;
     public string? CancellationReason { get; set; } = null;
+    public string PaymentMethodType { get; set; } = PaymentMethodTypes.Sandbox;
+    public string ConfirmationType { get; set; } = ConfirmationTypes.Redirect;
+    public string? ConfirmationData { get; set; } = null;
+    public bool SavePaymentMethod { get; set; } = false;
+    public Guid? SavedPaymentMethodId { get; set; } = null;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
