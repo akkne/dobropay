@@ -15,4 +15,8 @@ public static class ErrorCodes
     public const string AttemptNotReady = "attempt_not_ready";
     public const string UnknownAttempt = "unknown_attempt";
     public const string ShopMismatch = "shop_mismatch";
+    public const string InvalidPaymentMethod = "invalid_payment_method";
+    public const string InvalidConfirmationType = "invalid_confirmation_type";
+    public const string PaymentMethodNotFound = "payment_method_not_found";
+    public const string InvalidCryptoNetwork = "invalid_crypto_network";
 }
