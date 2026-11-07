@@ -215,6 +215,10 @@ services:
       Sandbox__Enabled: ${SANDBOX_ENABLED}
       Sandbox__PublicBaseUrl: ${PUBLIC_BASE_URL}
       Sandbox__InternalBaseUrl: ${PAYMENTS_SERVICE_URL}
+      Reconciliation__IntervalSeconds: ${RECONCILIATION_INTERVAL_SECONDS}
+      Reconciliation__AttemptStaleSeconds: ${RECONCILIATION_ATTEMPT_STALE_SECONDS}
+      Payments__ExpirationMinutes: ${PAYMENT_EXPIRATION_MINUTES}
+      Payments__CaptureExpirationMinutes: ${PAYMENT_CAPTURE_EXPIRATION_MINUTES}
 
   notifications:
     build:

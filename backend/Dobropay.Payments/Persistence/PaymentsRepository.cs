@@ -128,6 +128,26 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
         dbContext.ProviderInbox
             .SingleOrDefaultAsync(x => x.Id == inboxId && x.ShopId == shopId, cancellationToken);
 
+    public async Task<IReadOnlyList<PaymentAttempt>> ListStaleUnknownAttemptsAsync(
+        DateTimeOffset createdBefore,
+        int limit,
+        CancellationToken cancellationToken) =>
+        await dbContext.PaymentAttempts
+            .Where(x => x.State == PaymentRules.AttemptUnknown && x.ExternalId != null && x.CreatedAt <= createdBefore)
+            .OrderBy(x => x.CreatedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Payment>> ListExpiredActivePaymentsAsync(
+        DateTimeOffset now,
+        int limit,
+        CancellationToken cancellationToken) =>
+        await dbContext.Payments
+            .Where(x => (x.Status == PaymentRules.Pending || x.Status == PaymentRules.WaitingForCapture) && x.ExpiresAt <= now)
+            .OrderBy(x => x.ExpiresAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
     public async Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken) =>
         await dbContext.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
 

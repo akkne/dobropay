@@ -20,6 +20,8 @@ public interface IPaymentsRepository
     Task AddProviderEventAndOutboxAsync(ProviderInbox inbox, OutboxEvent outboxEvent, CancellationToken cancellationToken);
     Task<OutboxEvent?> FindNextUnpublishedOutboxAsync(CancellationToken cancellationToken);
     Task<ProviderInbox?> FindTrackedInboxAsync(Guid inboxId, Guid shopId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<PaymentAttempt>> ListStaleUnknownAttemptsAsync(DateTimeOffset createdBefore, int limit, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Payment>> ListExpiredActivePaymentsAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
     Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken);
     void ClearTracking();
 }

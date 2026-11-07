@@ -26,7 +26,16 @@ var options = new PaymentsOptions
     InternalBaseUrl = RequireConfig(ConfigurationKeyNames.SandboxInternalBaseUrl)
 };
 
+var reconciliationOptions = new ReconciliationOptions
+{
+    IntervalSeconds = builder.Configuration.GetValue(ConfigurationKeyNames.ReconciliationIntervalSeconds, 10),
+    AttemptStaleSeconds = builder.Configuration.GetValue(ConfigurationKeyNames.ReconciliationAttemptStaleSeconds, 15),
+    PaymentExpirationMinutes = builder.Configuration.GetValue(ConfigurationKeyNames.PaymentExpirationMinutes, 30),
+    CaptureExpirationMinutes = builder.Configuration.GetValue(ConfigurationKeyNames.PaymentCaptureExpirationMinutes, 30)
+};
+
 builder.Services.AddSingleton(options);
+builder.Services.AddSingleton(reconciliationOptions);
 builder.Services.AddPostgresDbContext<PaymentsDbContext>(builder.Configuration);
 builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddInternalSecurity(builder.Configuration);
@@ -38,8 +47,10 @@ builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IPaymentCaptureService, PaymentCaptureService>();
 builder.Services.AddScoped<IRefundService, RefundService>();
+builder.Services.AddScoped<IPaymentReconciliationService, PaymentReconciliationService>();
 builder.Services.AddHttpClient<IDeveloperApiClient, DeveloperApiClient>();
 builder.Services.AddHostedService<PaymentEventWorker>();
+builder.Services.AddHostedService<PaymentReconciliationWorker>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(swagger => swagger.OperationFilter<PaymentHeadersFilter>());
 
