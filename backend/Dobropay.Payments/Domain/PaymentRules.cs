@@ -23,6 +23,11 @@ public static class PaymentRules
     public static bool CanCancel(string status) =>
         status is Pending or WaitingForCapture;
 
+    public static bool CanRefund(string paymentStatus, long capturedOrTotalAmount, long alreadyRefundedAmount, long requestedRefundAmount) =>
+        paymentStatus == Succeeded &&
+        requestedRefundAmount > 0 &&
+        capturedOrTotalAmount - alreadyRefundedAmount >= requestedRefundAmount;
+
     public static string ResolveAttemptOutcome(string providerOutcome, bool capture) =>
         providerOutcome == Succeeded
             ? (capture ? Succeeded : WaitingForCapture)
