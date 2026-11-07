@@ -6,6 +6,8 @@ namespace Dobropay.Payments.Provider;
 
 public sealed class SandboxProvider(string secret, IHashProvider hashProvider) : IPaymentProvider
 {
+    public string PaymentMethodType => PaymentMethodTypes.Sandbox;
+
     public Task<string> CreateAttemptAsync(Guid attemptId, Guid operationKey, CancellationToken cancellationToken) =>
         Task.FromResult(DomainConstants.SimulatorAttemptPrefix + attemptId.ToString("N"));
 

@@ -7,6 +7,8 @@ public sealed class FakePaymentProvider : IPaymentProvider
 {
     private readonly Dictionary<string, string?> _attemptStates = [];
 
+    public string PaymentMethodType => PaymentMethodTypes.Sandbox;
+
     public string NextRefundStatus { get; set; } = RefundStatuses.Succeeded;
 
     public void SetAttemptState(string externalId, string? state) =>
