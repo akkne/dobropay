@@ -8,6 +8,9 @@
     handle /v1/payments* {
         reverse_proxy payments:8080
     }
+    handle /v1/refunds* {
+        reverse_proxy payments:8080
+    }
     handle /checkout/* {
         reverse_proxy payments:8080
     }

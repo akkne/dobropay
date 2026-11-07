@@ -35,7 +35,9 @@ builder.Services.AddSingleton<ICheckoutTokenGenerator>(provider =>
 builder.Services.AddSingleton<IPaymentProvider>(provider =>
     new SandboxProvider(options.ProviderSecret, provider.GetRequiredService<IHashProvider>()));
 builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IPaymentCaptureService, PaymentCaptureService>();
+builder.Services.AddScoped<IRefundService, RefundService>();
 builder.Services.AddHttpClient<IDeveloperApiClient, DeveloperApiClient>();
 builder.Services.AddHostedService<PaymentEventWorker>();
 builder.Services.AddEndpointsApiExplorer();
@@ -45,4 +47,5 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapPaymentsEndpoints(options);
+app.MapRefundsEndpoints();
 app.Run();

@@ -12,6 +12,11 @@ public sealed class SandboxProvider(string secret, IHashProvider hashProvider) :
     public Task<string?> GetAttemptStateAsync(string externalId, CancellationToken cancellationToken) =>
         Task.FromResult<string?>(null);
 
+    public Task<RefundProviderResult> CreateRefundAsync(RefundProviderRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult(new RefundProviderResult(
+            DomainConstants.SimulatorRefundPrefix + request.RefundId.ToString("N"),
+            RefundStatuses.Succeeded));
+
     public bool VerifyEvent(ReadOnlySpan<byte> body, string? signature) =>
         !string.IsNullOrEmpty(signature) &&
         hashProvider.FixedTimeEqualsAscii(hashProvider.ComputeHmacSha256Hex(secret, body), signature);

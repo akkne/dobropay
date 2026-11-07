@@ -9,7 +9,8 @@ public sealed class PaymentHeadersFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         var path = context.ApiDescription.RelativePath ?? string.Empty;
-        if (!path.StartsWith(PublicRouteNames.PaymentsOpenApiPrefix, StringComparison.Ordinal))
+        if (!path.StartsWith(PublicRouteNames.PaymentsOpenApiPrefix, StringComparison.Ordinal) &&
+            !path.StartsWith(PublicRouteNames.RefundsOpenApiPrefix, StringComparison.Ordinal))
         {
             return;
         }
