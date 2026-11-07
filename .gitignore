@@ -3,6 +3,7 @@
 !*.example
 *.session
 sessions/
+/ai-requests.json
 .idea/
 .vs/
 .vscode/
