@@ -11,10 +11,13 @@
     handle /v1/refunds* {
         reverse_proxy payments:8080
     }
+    handle /v1/payment-methods* {
+        reverse_proxy payments:8080
+    }
     handle /checkout/* {
         reverse_proxy payments:8080
     }
-    handle /v1/provider/sandbox/events {
+    handle /v1/provider/* {
         reverse_proxy payments:8080
     }
     handle /local/webhooks/received {

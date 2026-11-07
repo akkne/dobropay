@@ -2,6 +2,7 @@ using System.Text;
 using Dobropay.Contracts.Constants;
 using Dobropay.Contracts.Security;
 using Dobropay.Payments.Domain;
+using Dobropay.Payments.Persistence;
 using Dobropay.Payments.Provider;
 
 namespace Dobropay.UnitTests;
@@ -85,10 +86,53 @@ public sealed class PaymentProvidersTests
         Assert.Equal(19, usdtQuote.RequiredConfirmations);
         Assert.StartsWith($"{DomainConstants.CryptoDepositAddressPrefix}usdt_trc20_", usdtQuote.DepositAddress);
 
+        var tonQuote = rateProvider.CalculateQuote(attemptId, 50000, CryptoNetworks.Ton, now);
+        Assert.Equal(CryptoCurrencies.Ton, tonQuote.CryptoCurrency);
+        Assert.Equal(1, tonQuote.RequiredConfirmations);
+
+        var btcQuote = rateProvider.CalculateQuote(attemptId, 850000000, CryptoNetworks.Btc, now);
+        Assert.Equal(CryptoCurrencies.Btc, btcQuote.CryptoCurrency);
+        Assert.Equal("1.00000000", btcQuote.CryptoAmount);
+        Assert.Equal(3, btcQuote.RequiredConfirmations);
+
         var body = Encoding.UTF8.GetBytes("{\"id\":\"evt-1\"}");
         var hashProvider = new Sha256HashProvider();
         var cryptoProvider = new CryptoPaymentProvider(TestSecret, hashProvider, rateProvider);
         var sig = hashProvider.ComputeHmacSha256Hex(TestSecret, body);
         Assert.True(cryptoProvider.VerifyEvent(body, sig));
+    }
+
+    [Fact]
+    public async Task FakePaymentsRepository_StoresAndReturnsSavedPaymentMethodViews()
+    {
+        var repository = new FakePaymentsRepository();
+        var shopId = Guid.NewGuid();
+        var methodId = Guid.NewGuid();
+        var savedAt = DateTimeOffset.UtcNow;
+
+        await repository.AddSavedPaymentMethodAsync(
+            new SavedPaymentMethod
+            {
+                Id = methodId,
+                ShopId = shopId,
+                Type = PaymentMethodTypes.BankCard,
+                CardFirst6 = "220070",
+                CardLast4 = "9876",
+                ExpiryMonth = 8,
+                ExpiryYear = 2029,
+                CardBrand = DomainConstants.DefaultCardBrand,
+                ProviderToken = "pm_tok_test123",
+                SavedAt = savedAt
+            },
+            CancellationToken.None);
+
+        var single = await repository.FindSavedPaymentMethodViewAsync(shopId, methodId, CancellationToken.None);
+        var list = await repository.ListSavedPaymentMethodsAsync(shopId, 10, CancellationToken.None);
+
+        Assert.NotNull(single);
+        Assert.Equal("220070", single!.CardFirst6);
+        Assert.Equal("9876", single.CardLast4);
+        Assert.Single(list);
+        Assert.Equal(methodId, list[0].Id);
     }
 }

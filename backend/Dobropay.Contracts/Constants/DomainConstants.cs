@@ -25,6 +25,7 @@ public static class DomainConstants
     public const string CryptoAttemptPrefix = "crypto-";
     public const string CryptoRefundPrefix = "crypto-ref-";
     public const string CryptoDepositAddressPrefix = "dp_crypto_";
+    public const string CryptoConfirmingNetworkState = "confirming_network";
     public const string DefaultCardBrand = "Mir";
     public const string WebhookRateLimitPrefix = "webhook-limit:";
 }

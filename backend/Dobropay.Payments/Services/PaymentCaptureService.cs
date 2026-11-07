@@ -266,5 +266,10 @@ public sealed class PaymentCaptureService(
             payment.CapturedAmount,
             payment.RefundedAmount,
             payment.CancellationParty,
-            payment.CancellationReason);
+            payment.CancellationReason,
+            payment.PaymentMethodType,
+            payment.ConfirmationType,
+            payment.ConfirmationData,
+            payment.SavePaymentMethod,
+            payment.SavedPaymentMethodId);
 }

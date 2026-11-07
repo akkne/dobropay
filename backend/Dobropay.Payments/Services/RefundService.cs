@@ -14,7 +14,7 @@ namespace Dobropay.Payments.Services;
 public sealed class RefundService(
     IPaymentsRepository paymentsRepository,
     IRefundRepository refundRepository,
-    IPaymentProvider provider,
+    IPaymentProviderRouter providerRouter,
     IUnitOfWork unitOfWork,
     IHashProvider hashProvider) : IRefundService
 {
@@ -79,6 +79,7 @@ public sealed class RefundService(
         }
 
         var refundId = Guid.NewGuid();
+        var provider = providerRouter.Resolve(payment.PaymentMethodType);
         var providerResult = await provider.CreateRefundAsync(
             new RefundProviderRequest(refundId, payment.Id, request.Amount, request.Currency),
             cancellationToken);
