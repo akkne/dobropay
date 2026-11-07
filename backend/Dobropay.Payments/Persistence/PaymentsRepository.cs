@@ -44,7 +44,12 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
                 x.CapturedAmount,
                 x.RefundedAmount,
                 x.CancellationParty,
-                x.CancellationReason))
+                x.CancellationReason,
+                x.PaymentMethodType,
+                x.ConfirmationType,
+                x.ConfirmationData,
+                x.SavePaymentMethod,
+                x.SavedPaymentMethodId))
             .ToListAsync(cancellationToken);
 
     public Task<CheckoutLink?> FindCheckoutLinkAsync(string tokenHash, CancellationToken cancellationToken) =>
@@ -82,12 +87,15 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
     public async Task AddPaymentAsync(
         Payment payment,
         IdempotencyRecord idempotencyRecord,
-        CheckoutLink checkoutLink,
+        CheckoutLink? checkoutLink,
         CancellationToken cancellationToken)
     {
         await dbContext.Payments.AddAsync(payment, cancellationToken);
         await dbContext.IdempotencyRecords.AddAsync(idempotencyRecord, cancellationToken);
-        await dbContext.CheckoutLinks.AddAsync(checkoutLink, cancellationToken);
+        if (checkoutLink is not null)
+        {
+            await dbContext.CheckoutLinks.AddAsync(checkoutLink, cancellationToken);
+        }
     }
 
     public async Task AddIdempotencyRecordAsync(
@@ -158,6 +166,24 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
         dbContext.SavedPaymentMethods
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.ShopId == shopId && x.Id == methodId, cancellationToken);
+
+    public Task<SavedPaymentMethodView?> FindSavedPaymentMethodViewAsync(
+        Guid shopId,
+        Guid methodId,
+        CancellationToken cancellationToken) =>
+        dbContext.SavedPaymentMethods
+            .AsNoTracking()
+            .Where(x => x.ShopId == shopId && x.Id == methodId)
+            .Select(x => new SavedPaymentMethodView(
+                x.Id,
+                x.Type,
+                x.CardFirst6,
+                x.CardLast4,
+                x.ExpiryMonth,
+                x.ExpiryYear,
+                x.CardBrand,
+                x.SavedAt))
+            .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(
         Guid shopId,

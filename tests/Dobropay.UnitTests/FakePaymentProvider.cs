@@ -3,11 +3,11 @@ using Dobropay.Payments.Domain;
 
 namespace Dobropay.UnitTests;
 
-public sealed class FakePaymentProvider : IPaymentProvider
+public sealed class FakePaymentProvider(string paymentMethodType = PaymentMethodTypes.Sandbox) : IPaymentProvider
 {
     private readonly Dictionary<string, string?> _attemptStates = [];
 
-    public string PaymentMethodType => PaymentMethodTypes.Sandbox;
+    public string PaymentMethodType => paymentMethodType;
 
     public string NextRefundStatus { get; set; } = RefundStatuses.Succeeded;
 
@@ -22,7 +22,7 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public Task<RefundProviderResult> CreateRefundAsync(RefundProviderRequest request, CancellationToken cancellationToken) =>
         Task.FromResult(new RefundProviderResult(
-            DomainConstants.SimulatorRefundPrefix + request.RefundId.ToString("N"),
+            $"{paymentMethodType}-ref-{request.RefundId:N}",
             NextRefundStatus));
 
     public bool VerifyEvent(ReadOnlySpan<byte> body, string? signature) => true;

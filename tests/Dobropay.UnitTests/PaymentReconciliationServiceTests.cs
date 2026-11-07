@@ -1,6 +1,7 @@
 using Dobropay.Contracts.Constants;
 using Dobropay.Payments.Domain;
 using Dobropay.Payments.Persistence;
+using Dobropay.Payments.Provider;
 using Dobropay.Payments.Services;
 
 namespace Dobropay.UnitTests;
@@ -12,6 +13,7 @@ public sealed class PaymentReconciliationServiceTests
     {
         var repository = new FakePaymentsRepository();
         var provider = new FakePaymentProvider();
+        var router = new PaymentProviderRouter([provider]);
         var unitOfWork = new FakeUnitOfWork();
         var options = new ReconciliationOptions
         {
@@ -20,7 +22,7 @@ public sealed class PaymentReconciliationServiceTests
             PaymentExpirationMinutes = 30,
             CaptureExpirationMinutes = 30
         };
-        var service = new PaymentReconciliationService(repository, provider, unitOfWork, options);
+        var service = new PaymentReconciliationService(repository, router, unitOfWork, options);
 
         var now = DateTimeOffset.UtcNow;
         var shopId = Guid.NewGuid();
@@ -68,10 +70,12 @@ public sealed class PaymentReconciliationServiceTests
     }
 
     [Fact]
-    public async Task ReconcileStaleAttemptsAsync_ResolvesStaleUnknownAttemptWithProviderState()
+    public async Task ReconcileStaleAttemptsAsync_ResolvesStaleUnknownAttemptsAcrossPaymentMethods()
     {
         var repository = new FakePaymentsRepository();
-        var provider = new FakePaymentProvider();
+        var sandboxProvider = new FakePaymentProvider(PaymentMethodTypes.Sandbox);
+        var sbpProvider = new FakePaymentProvider(PaymentMethodTypes.Sbp);
+        var router = new PaymentProviderRouter([sandboxProvider, sbpProvider]);
         var unitOfWork = new FakeUnitOfWork();
         var options = new ReconciliationOptions
         {
@@ -80,39 +84,67 @@ public sealed class PaymentReconciliationServiceTests
             PaymentExpirationMinutes = 30,
             CaptureExpirationMinutes = 30
         };
-        var service = new PaymentReconciliationService(repository, provider, unitOfWork, options);
+        var service = new PaymentReconciliationService(repository, router, unitOfWork, options);
 
         var now = DateTimeOffset.UtcNow;
         var shopId = Guid.NewGuid();
-        var payment = new Payment
+        var payment1 = new Payment
         {
             Id = Guid.NewGuid(),
             ShopId = shopId,
             Amount = 45000,
             Status = PaymentRules.Pending,
             Capture = false,
+            PaymentMethodType = PaymentMethodTypes.Sandbox,
             ExpiresAt = now.AddMinutes(20)
         };
-        var attempt = new PaymentAttempt
+        var attempt1 = new PaymentAttempt
         {
             Id = Guid.NewGuid(),
             ShopId = shopId,
-            PaymentId = payment.Id,
+            PaymentId = payment1.Id,
             OperationKey = Guid.NewGuid(),
             ExternalId = "sim-stale-1",
+            PaymentMethodType = PaymentMethodTypes.Sandbox,
             State = PaymentRules.AttemptUnknown,
             CreatedAt = now.AddSeconds(-30)
         };
 
-        repository.Payments.Add(payment);
-        repository.Attempts.Add(attempt);
-        provider.SetAttemptState("sim-stale-1", PaymentRules.Succeeded);
+        var payment2 = new Payment
+        {
+            Id = Guid.NewGuid(),
+            ShopId = shopId,
+            Amount = 80000,
+            Status = PaymentRules.Pending,
+            Capture = true,
+            PaymentMethodType = PaymentMethodTypes.Sbp,
+            ExpiresAt = now.AddMinutes(20)
+        };
+        var attempt2 = new PaymentAttempt
+        {
+            Id = Guid.NewGuid(),
+            ShopId = shopId,
+            PaymentId = payment2.Id,
+            OperationKey = Guid.NewGuid(),
+            ExternalId = "sbp-stale-1",
+            PaymentMethodType = PaymentMethodTypes.Sbp,
+            State = PaymentRules.AttemptUnknown,
+            CreatedAt = now.AddSeconds(-40)
+        };
+
+        repository.Payments.AddRange([payment1, payment2]);
+        repository.Attempts.AddRange([attempt1, attempt2]);
+        sandboxProvider.SetAttemptState("sim-stale-1", PaymentRules.Succeeded);
+        sbpProvider.SetAttemptState("sbp-stale-1", PaymentRules.Succeeded);
 
         var reconciledCount = await service.ReconcileStaleAttemptsAsync(now, CancellationToken.None);
 
-        Assert.Equal(1, reconciledCount);
-        Assert.Equal(PaymentRules.Succeeded, attempt.State);
-        Assert.Equal(PaymentRules.WaitingForCapture, payment.Status);
-        Assert.Single(repository.OutboxEvents);
+        Assert.Equal(2, reconciledCount);
+        Assert.Equal(PaymentRules.Succeeded, attempt1.State);
+        Assert.Equal(PaymentRules.WaitingForCapture, payment1.Status);
+        Assert.Equal(PaymentRules.Succeeded, attempt2.State);
+        Assert.Equal(PaymentRules.Succeeded, payment2.Status);
+        Assert.Equal(80000, payment2.CapturedAmount);
+        Assert.Equal(2, repository.OutboxEvents.Count);
     }
 }

@@ -39,6 +39,11 @@ public static class PaymentsEndpoints
             IUnitOfWork unitOfWork,
             IHashProvider hashProvider,
             ICheckoutTokenGenerator tokenGenerator,
+            IPaymentProviderRouter providerRouter,
+            SbpPaymentProvider sbpProvider,
+            BankCardPaymentProvider cardProvider,
+            CryptoPaymentProvider cryptoProvider,
+            ICryptoExchangeRateProvider cryptoRateProvider,
             CancellationToken ct) =>
         {
             var shopId = await developerApiClient.ResolveShopIdByApiKeyAsync(
@@ -62,6 +67,33 @@ public static class PaymentsEndpoints
                 return Results.BadRequest(new { error = ErrorCodes.InvalidPayment });
             }
 
+            var paymentMethodType = string.IsNullOrWhiteSpace(body.PaymentMethodType)
+                ? PaymentMethodTypes.Sandbox
+                : body.PaymentMethodType.Trim().ToLowerInvariant();
+            if (!providerRouter.IsSupported(paymentMethodType))
+            {
+                return Results.BadRequest(new { error = ErrorCodes.InvalidPaymentMethod });
+            }
+
+            var confirmationType = string.IsNullOrWhiteSpace(body.ConfirmationType)
+                ? ConfirmationTypes.Redirect
+                : body.ConfirmationType.Trim().ToLowerInvariant();
+            if (confirmationType is not (
+                ConfirmationTypes.Redirect or
+                ConfirmationTypes.Qr or
+                ConfirmationTypes.Embedded or
+                ConfirmationTypes.External))
+            {
+                return Results.BadRequest(new { error = ErrorCodes.InvalidConfirmationType });
+            }
+
+            if (paymentMethodType == PaymentMethodTypes.Crypto &&
+                !string.IsNullOrWhiteSpace(body.CryptoNetwork) &&
+                !cryptoRateProvider.IsSupportedNetwork(body.CryptoNetwork))
+            {
+                return Results.BadRequest(new { error = ErrorCodes.InvalidCryptoNetwork });
+            }
+
             var normalizedOrderId = body.ExternalOrderId?.Trim();
             var fingerprint = hashProvider.ComputeSha256Hex(
                 JsonSerializer.Serialize(new
@@ -69,7 +101,12 @@ public static class PaymentsEndpoints
                     body.Amount,
                     body.Currency,
                     ExternalOrderId = normalizedOrderId,
-                    body.Capture
+                    body.Capture,
+                    PaymentMethodType = paymentMethodType,
+                    ConfirmationType = confirmationType,
+                    body.SavePaymentMethod,
+                    body.PaymentMethodId,
+                    CryptoNetwork = body.CryptoNetwork?.Trim().ToUpperInvariant()
                 }));
 
             try
@@ -92,7 +129,112 @@ public static class PaymentsEndpoints
                         : Results.Ok(BuildPaymentResponse(previousPayment, options, tokenGenerator));
                 }
 
-                var expiresAt = DateTimeOffset.UtcNow.AddMinutes(CheckoutLifetimeMinutes);
+                var now = DateTimeOffset.UtcNow;
+                var expiresAt = now.AddMinutes(CheckoutLifetimeMinutes);
+
+                if (body.PaymentMethodId is not null)
+                {
+                    var savedMethod = await repository.FindSavedPaymentMethodAsync(
+                        shopId.Value,
+                        body.PaymentMethodId.Value,
+                        ct);
+                    if (savedMethod is null)
+                    {
+                        return Results.NotFound(new { error = ErrorCodes.PaymentMethodNotFound });
+                    }
+
+                    var recurringPayment = new Payment
+                    {
+                        Id = Guid.NewGuid(),
+                        ShopId = shopId.Value,
+                        Amount = body.Amount,
+                        Currency = DomainConstants.DefaultCurrency,
+                        ExternalOrderId = normalizedOrderId,
+                        Capture = body.Capture,
+                        ExpiresAt = expiresAt,
+                        PaymentMethodType = savedMethod.Type,
+                        ConfirmationType = ConfirmationTypes.External,
+                        SavePaymentMethod = body.SavePaymentMethod,
+                        SavedPaymentMethodId = savedMethod.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    };
+
+                    var attemptId = Guid.NewGuid();
+                    var operationKey = Guid.NewGuid();
+                    var externalAttemptId = await cardProvider.CreateAttemptAsync(attemptId, operationKey, ct);
+                    var recurringAttempt = new PaymentAttempt
+                    {
+                        Id = attemptId,
+                        ShopId = shopId.Value,
+                        PaymentId = recurringPayment.Id,
+                        OperationKey = operationKey,
+                        ExternalId = externalAttemptId,
+                        State = PaymentRules.Succeeded,
+                        PaymentMethodType = savedMethod.Type,
+                        CreatedAt = now
+                    };
+
+                    var targetStatus = PaymentRules.ResolveAttemptOutcome(PaymentRules.Succeeded, body.Capture);
+                    recurringPayment.Status = targetStatus;
+                    if (targetStatus == PaymentRules.Succeeded)
+                    {
+                        recurringPayment.CapturedAmount = recurringPayment.Amount;
+                        recurringPayment.CapturedAt = now;
+                    }
+
+                    var recurringIdempotencyRecord = new IdempotencyRecord
+                    {
+                        ShopId = shopId.Value,
+                        Operation = DomainConstants.CreatePaymentOperation,
+                        IdempotencyKey = idempotencyKey,
+                        RequestHash = fingerprint,
+                        PaymentId = recurringPayment.Id
+                    };
+
+                    var payload = JsonSerializer.SerializeToElement(new
+                    {
+                        id = recurringPayment.Id,
+                        status = targetStatus,
+                        amount = recurringPayment.Amount,
+                        currency = recurringPayment.Currency
+                    });
+                    var envelope = new EventEnvelope(
+                        Guid.NewGuid(),
+                        KafkaContracts.PaymentEventPrefix + targetStatus,
+                        ContractVersions.EventSchema,
+                        now,
+                        shopId.Value,
+                        recurringPayment.Id,
+                        http.TraceIdentifier,
+                        payload);
+                    var outboxEvent = new OutboxEvent
+                    {
+                        Id = envelope.EventId,
+                        ShopId = shopId.Value,
+                        PaymentId = recurringPayment.Id,
+                        Topic = KafkaContracts.PaymentEvents,
+                        Envelope = JsonSerializer.Serialize(envelope),
+                        OccurredAt = envelope.OccurredAt,
+                        Published = false
+                    };
+
+                    await repository.AddPaymentAsync(recurringPayment, recurringIdempotencyRecord, null, ct);
+                    await repository.AddAttemptAsync(recurringAttempt, ct);
+                    await repository.AddOutboxEventAsync(outboxEvent, ct);
+                    await unitOfWork.SaveChangesAsync(ct);
+
+                    app.Logger.LogInformation(
+                        "Recurring payment created {PaymentId} shop {ShopId} method {PaymentMethodId} correlation {CorrelationId}",
+                        recurringPayment.Id,
+                        shopId,
+                        savedMethod.Id,
+                        http.TraceIdentifier);
+                    return Results.Created(
+                        $"{PublicRouteNames.Payments}/{recurringPayment.Id}",
+                        BuildPaymentResponse(recurringPayment, options, tokenGenerator));
+                }
+
                 var payment = new Payment
                 {
                     Id = Guid.NewGuid(),
@@ -101,8 +243,37 @@ public static class PaymentsEndpoints
                     Currency = DomainConstants.DefaultCurrency,
                     ExternalOrderId = normalizedOrderId,
                     Capture = body.Capture,
-                    ExpiresAt = expiresAt
+                    ExpiresAt = expiresAt,
+                    PaymentMethodType = paymentMethodType,
+                    ConfirmationType = confirmationType,
+                    SavePaymentMethod = body.SavePaymentMethod,
+                    CreatedAt = now,
+                    UpdatedAt = now
                 };
+
+                if (body.SavePaymentMethod && body.Card is not null)
+                {
+                    var first6 = body.Card.CardFirst6.Trim();
+                    var last4 = body.Card.CardLast4.Trim();
+                    var savedMethod = new SavedPaymentMethod
+                    {
+                        Id = Guid.NewGuid(),
+                        ShopId = shopId.Value,
+                        Type = PaymentMethodTypes.BankCard,
+                        CardFirst6 = first6,
+                        CardLast4 = last4,
+                        ExpiryMonth = body.Card.ExpiryMonth,
+                        ExpiryYear = body.Card.ExpiryYear,
+                        CardBrand = string.IsNullOrWhiteSpace(body.Card.CardBrand)
+                            ? DomainConstants.DefaultCardBrand
+                            : body.Card.CardBrand.Trim(),
+                        ProviderToken = cardProvider.IssueProviderToken(payment.Id, first6, last4),
+                        SavedAt = now
+                    };
+                    await repository.AddSavedPaymentMethodAsync(savedMethod, ct);
+                    payment.SavedPaymentMethodId = savedMethod.Id;
+                }
+
                 var idempotencyRecord = new IdempotencyRecord
                 {
                     ShopId = shopId.Value,
@@ -120,6 +291,60 @@ public static class PaymentsEndpoints
                 };
 
                 await repository.AddPaymentAsync(payment, idempotencyRecord, checkoutLink, ct);
+
+                if (paymentMethodType == PaymentMethodTypes.Sbp && confirmationType == ConfirmationTypes.Qr)
+                {
+                    var attemptId = Guid.NewGuid();
+                    var operationKey = Guid.NewGuid();
+                    var qr = sbpProvider.GenerateQrPayload(attemptId, payment.Amount, payment.Currency, expiresAt);
+                    var externalId = await sbpProvider.CreateAttemptAsync(attemptId, operationKey, ct);
+                    var sbpAttempt = new PaymentAttempt
+                    {
+                        Id = attemptId,
+                        ShopId = shopId.Value,
+                        PaymentId = payment.Id,
+                        OperationKey = operationKey,
+                        ExternalId = externalId,
+                        PaymentMethodType = PaymentMethodTypes.Sbp,
+                        SbpQrcId = qr.QrcId,
+                        ConfirmationPayload = qr.PayloadUrl,
+                        CreatedAt = now
+                    };
+                    payment.ConfirmationData = qr.PayloadUrl;
+                    await repository.AddAttemptAsync(sbpAttempt, ct);
+                }
+                else if (paymentMethodType == PaymentMethodTypes.Crypto)
+                {
+                    var attemptId = Guid.NewGuid();
+                    var operationKey = Guid.NewGuid();
+                    var network = string.IsNullOrWhiteSpace(body.CryptoNetwork)
+                        ? CryptoNetworks.UsdtTrc20
+                        : body.CryptoNetwork.Trim();
+                    var quote = cryptoProvider.CreateQuote(attemptId, payment.Amount, network, now);
+                    var externalId = await cryptoProvider.CreateAttemptAsync(attemptId, operationKey, ct);
+                    var cryptoAttempt = new PaymentAttempt
+                    {
+                        Id = attemptId,
+                        ShopId = shopId.Value,
+                        PaymentId = payment.Id,
+                        OperationKey = operationKey,
+                        ExternalId = externalId,
+                        PaymentMethodType = PaymentMethodTypes.Crypto,
+                        CryptoCurrency = quote.CryptoCurrency,
+                        CryptoNetwork = quote.Network,
+                        ExchangeRate = quote.ExchangeRate,
+                        CryptoAmount = quote.CryptoAmount,
+                        DepositAddress = quote.DepositAddress,
+                        QuoteExpiresAt = quote.QuoteExpiresAt,
+                        RequiredConfirmations = quote.RequiredConfirmations,
+                        Confirmations = 0,
+                        ConfirmationPayload = quote.DepositAddress,
+                        CreatedAt = now
+                    };
+                    payment.ConfirmationData = quote.DepositAddress;
+                    await repository.AddAttemptAsync(cryptoAttempt, ct);
+                }
+
                 await unitOfWork.SaveChangesAsync(ct);
 
                 app.Logger.LogInformation(
@@ -400,7 +625,10 @@ public static class PaymentsEndpoints
             string token,
             IPaymentsRepository repository,
             IUnitOfWork unitOfWork,
-            IPaymentProvider provider,
+            IPaymentProviderRouter providerRouter,
+            SbpPaymentProvider sbpProvider,
+            BankCardPaymentProvider cardProvider,
+            CryptoPaymentProvider cryptoProvider,
             IHashProvider hashProvider,
             CancellationToken ct) =>
         {
@@ -426,6 +654,7 @@ public static class PaymentsEndpoints
                 return Results.Redirect($"{PublicRouteNames.CheckoutPrefix}{token}");
             }
 
+            var provider = providerRouter.Resolve(payment.PaymentMethodType);
             var attempt = await repository.FindTrackedAttemptByPaymentAsync(link.ShopId, payment.Id, ct);
             if (attempt is null)
             {
@@ -434,11 +663,42 @@ public static class PaymentsEndpoints
                     Id = Guid.NewGuid(),
                     ShopId = link.ShopId,
                     PaymentId = payment.Id,
-                    OperationKey = Guid.NewGuid()
+                    OperationKey = Guid.NewGuid(),
+                    PaymentMethodType = payment.PaymentMethodType
                 };
                 await repository.AddAttemptAsync(attempt, ct);
-                await unitOfWork.SaveChangesAsync(ct);
             }
+
+            if (payment.PaymentMethodType == PaymentMethodTypes.Sbp && attempt.SbpQrcId is null)
+            {
+                var qr = sbpProvider.GenerateQrPayload(attempt.Id, payment.Amount, payment.Currency, link.ExpiresAt);
+                attempt.SbpQrcId = qr.QrcId;
+                attempt.ConfirmationPayload = qr.PayloadUrl;
+            }
+            else if (payment.PaymentMethodType == PaymentMethodTypes.BankCard && attempt.ConfirmationPayload is null)
+            {
+                var challenge = cardProvider.Create3dsChallenge(attempt.Id, token);
+                attempt.ConfirmationPayload = challenge.ChallengeUrl;
+            }
+            else if (payment.PaymentMethodType == PaymentMethodTypes.Crypto && attempt.DepositAddress is null)
+            {
+                var quote = cryptoProvider.CreateQuote(
+                    attempt.Id,
+                    payment.Amount,
+                    attempt.CryptoNetwork ?? CryptoNetworks.UsdtTrc20,
+                    DateTimeOffset.UtcNow);
+                attempt.CryptoCurrency = quote.CryptoCurrency;
+                attempt.CryptoNetwork = quote.Network;
+                attempt.ExchangeRate = quote.ExchangeRate;
+                attempt.CryptoAmount = quote.CryptoAmount;
+                attempt.DepositAddress = quote.DepositAddress;
+                attempt.QuoteExpiresAt = quote.QuoteExpiresAt;
+                attempt.RequiredConfirmations = quote.RequiredConfirmations;
+                attempt.Confirmations ??= 0;
+                attempt.ConfirmationPayload = quote.DepositAddress;
+            }
+
+            await unitOfWork.SaveChangesAsync(ct);
 
             try
             {
@@ -515,7 +775,7 @@ public static class PaymentsEndpoints
 
             app.MapPost(PublicRouteNames.ProviderSandboxEvents, async (
                 HttpContext http,
-                IPaymentProvider provider,
+                SandboxProvider provider,
                 IPaymentsRepository repository,
                 IUnitOfWork unitOfWork,
                 CancellationToken ct) =>
@@ -622,10 +882,17 @@ public static class PaymentsEndpoints
             payment.Status,
             payment.Amount,
             payment.Currency,
-            options.PublicBaseUrl + PublicRouteNames.CheckoutPrefix + tokenGenerator.GenerateToken(payment.Id),
+            payment.ConfirmationType == ConfirmationTypes.External
+                ? null
+                : options.PublicBaseUrl + PublicRouteNames.CheckoutPrefix + tokenGenerator.GenerateToken(payment.Id),
             payment.Capture,
             payment.CapturedAmount,
-            payment.RefundedAmount);
+            payment.RefundedAmount,
+            payment.PaymentMethodType,
+            payment.ConfirmationType,
+            payment.ConfirmationData,
+            payment.SavePaymentMethod,
+            payment.SavedPaymentMethodId);
 
     private static PaymentView BuildPaymentView(Payment payment) =>
         new(
@@ -638,7 +905,12 @@ public static class PaymentsEndpoints
             payment.CapturedAmount,
             payment.RefundedAmount,
             payment.CancellationParty,
-            payment.CancellationReason);
+            payment.CancellationReason,
+            payment.PaymentMethodType,
+            payment.ConfirmationType,
+            payment.ConfirmationData,
+            payment.SavePaymentMethod,
+            payment.SavedPaymentMethodId);
 
     private static string? ResolveInternalIdempotencyKey(HttpRequest request)
     {

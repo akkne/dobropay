@@ -81,4 +81,5 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.MapPaymentsEndpoints(options);
 app.MapRefundsEndpoints();
+app.MapProviderWebhookEndpoints();
 app.Run();

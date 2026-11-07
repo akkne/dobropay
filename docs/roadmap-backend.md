@@ -13,7 +13,7 @@
 ```mermaid
 flowchart LR
   B0["Этап 0: Базовый контур (Выполнено)"] --> B1["Этап 1: Hold/Capture, Возвраты и Сверка (Выполнено)"]
-  B1 --> B2["Этап 2: Провайдеры (Карты 3DS, СБП QR, Крипто)"]
+  B1 --> B2["Этап 2: Провайдеры (Карты 3DS, СБП QR, Крипто) (Выполнено)"]
   B2 --> B3["Этап 3: Фискализация 54-ФЗ и Поиск чеков"]
   B3 --> B4["Этап 4: Онбординг, RBAC, Webhooks v2 и Пилот"]
 ```
@@ -64,30 +64,30 @@ flowchart LR
 
 ---
 
-## Этап 2. Провайдеры и способы оплаты: Банковские карты, СБП, Криптовалюта (`Dobropay.Payments`)
+## Этап 2. Провайдеры и способы оплаты: Банковские карты, СБП, Криптовалюта (`Dobropay.Payments`) — Выполнено
 
 ### Эпик 2.1. Маршрутизатор провайдеров и полиморфный `confirmation`
-- **Задача 2.1.1 — Архитектура `IPaymentProviderRouter`**:
+- [x] **Задача 2.1.1 — Архитектура `IPaymentProviderRouter`**:
   - Выделить перечисление/константы методов оплаты `PaymentMethodTypes` (`BankCard = "bank_card"`, `Sbp = "sbp"`, `Crypto = "crypto"`, `Sandbox = "sandbox"`) и типов подтверждения `ConfirmationTypes` (`Redirect = "redirect"`, `Qr = "qr"`, `Embedded = "embedded"`, `External = "external"`).
   - Спроектировать `IPaymentProviderRouter`, выбирающий нужную реализацию `IPaymentProvider` по методу оплаты.
 
 ### Эпик 2.2. Система быстрых платежей — СБП (`SbpPaymentProvider`)
-- **Задача 2.2.1 — Генерация динамического QR НСПК**:
+- [x] **Задача 2.2.1 — Генерация динамического QR НСПК**:
   - Создать `ISbpQrGenerator` и `SbpPaymentProvider : IPaymentProvider`.
   - Формировать `qrc_id` и ссылку `https://qr.nspk.ru/...` со сроком действия, сохранять реквизиты в `PaymentAttempt` (`PaymentMethodType = "sbp"`, `ConfirmationPayload`).
   - Поддержать выдачу QR как на гостевом Checkout (`/checkout/{token}`), так и напрямую в ответе `POST /v1/payments` при `confirmation.type = "qr"`.
-- **Задача 2.2.2 — Входящий webhook СБП**:
+- [x] **Задача 2.2.2 — Входящий webhook СБП**:
   - Добавить маршрут `POST /v1/provider/sbp/events` с проверкой HMAC-подписи, сохранением `sbp_operation_id` и банка плательщика в `provider_inbox`.
 
 ### Эпик 2.3. Банковские карты (`BankCardPaymentProvider`), 3-D Secure и Автоплатежи
-- **Задача 2.3.1 — Маскированные метаданные карт и 3-D Secure**:
+- [x] **Задача 2.3.1 — Маскированные метаданные карт и 3-D Secure**:
   - Создать сущность `SavedPaymentMethod` (`Id`, `ShopId`, `Type`, `CardFirst6`, `CardLast4`, `ExpiryMonth`, `ExpiryYear`, `CardBrand`, `ProviderToken`, `SavedAt`) в `payments-db`.
   - Реализовать `BankCardPaymentProvider : IPaymentProvider` с поддержкой 3-D Secure 2.0 challenge/callback (`POST /v1/provider/card/3ds-callback`).
-- **Задача 2.3.2 — Рекуррентные списания (Автоплатежи)**:
+- [x] **Задача 2.3.2 — Рекуррентные списания (Автоплатежи)**:
   - Поддержать флаги `save_payment_method: true` и `payment_method_id: "<uuid>"` в `POST /v1/payments` для безакцептного списания по сохранённому токену без `checkoutUrl`.
 
 ### Эпик 2.4. Крипто-эквайринг (`CryptoPaymentProvider`)
-- **Задача 2.4.1 — Котировки курса и мониторинг подтверждений сети**:
+- [x] **Задача 2.4.1 — Котировки курса и мониторинг подтверждений сети**:
   - Спроектировать `ICryptoExchangeRateProvider` и `CryptoPaymentProvider : IPaymentProvider` (сети `USDT-TRC20`, `TON`, `BTC`).
   - Сохранять зафиксированный курс (`ExchangeRate`, `CryptoAmount`, `CryptoCurrency`, `Network`, `DepositAddress`, `QuoteExpiresAt`).
   - Принимать события `POST /v1/provider/crypto/events` с проверкой количества подтверждений (`confirmations >= required_confirmations`).

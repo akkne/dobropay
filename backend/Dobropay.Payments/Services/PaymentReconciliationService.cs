@@ -10,7 +10,7 @@ namespace Dobropay.Payments.Services;
 
 public sealed class PaymentReconciliationService(
     IPaymentsRepository repository,
-    IPaymentProvider provider,
+    IPaymentProviderRouter providerRouter,
     IUnitOfWork unitOfWork,
     ReconciliationOptions options) : IPaymentReconciliationService
 {
@@ -29,6 +29,7 @@ public sealed class PaymentReconciliationService(
                 continue;
             }
 
+            var provider = providerRouter.Resolve(attempt.PaymentMethodType);
             var providerOutcome = await provider.GetAttemptStateAsync(attempt.ExternalId, cancellationToken);
             if (providerOutcome is not (PaymentRules.Succeeded or PaymentRules.Canceled))
             {

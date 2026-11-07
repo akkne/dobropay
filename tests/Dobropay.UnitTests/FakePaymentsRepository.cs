@@ -45,7 +45,12 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
                 x.CapturedAmount,
                 x.RefundedAmount,
                 x.CancellationParty,
-                x.CancellationReason))
+                x.CancellationReason,
+                x.PaymentMethodType,
+                x.ConfirmationType,
+                x.ConfirmationData,
+                x.SavePaymentMethod,
+                x.SavedPaymentMethodId))
             .ToList());
 
     public Task<CheckoutLink?> FindCheckoutLinkAsync(string tokenHash, CancellationToken cancellationToken) =>
@@ -75,12 +80,16 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
     public Task AddPaymentAsync(
         Payment payment,
         IdempotencyRecord idempotencyRecord,
-        CheckoutLink checkoutLink,
+        CheckoutLink? checkoutLink,
         CancellationToken cancellationToken)
     {
         Payments.Add(payment);
         IdempotencyRecords.Add(idempotencyRecord);
-        CheckoutLinks.Add(checkoutLink);
+        if (checkoutLink is not null)
+        {
+            CheckoutLinks.Add(checkoutLink);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -157,6 +166,23 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
         Guid methodId,
         CancellationToken cancellationToken) =>
         Task.FromResult(SavedPaymentMethods.SingleOrDefault(x => x.ShopId == shopId && x.Id == methodId));
+
+    public Task<SavedPaymentMethodView?> FindSavedPaymentMethodViewAsync(
+        Guid shopId,
+        Guid methodId,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(SavedPaymentMethods
+            .Where(x => x.ShopId == shopId && x.Id == methodId)
+            .Select(x => new SavedPaymentMethodView(
+                x.Id,
+                x.Type,
+                x.CardFirst6,
+                x.CardLast4,
+                x.ExpiryMonth,
+                x.ExpiryYear,
+                x.CardBrand,
+                x.SavedAt))
+            .SingleOrDefault());
 
     public Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(
         Guid shopId,

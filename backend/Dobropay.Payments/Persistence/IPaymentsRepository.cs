@@ -13,7 +13,7 @@ public interface IPaymentsRepository
     Task<PaymentAttempt?> FindTrackedAttemptByPaymentAsync(Guid shopId, Guid paymentId, CancellationToken cancellationToken);
     Task<PaymentAttempt?> FindAttemptByIdAsync(Guid attemptId, CancellationToken cancellationToken);
     Task<PaymentAttempt?> FindTrackedAttemptByIdAsync(Guid shopId, Guid attemptId, CancellationToken cancellationToken);
-    Task AddPaymentAsync(Payment payment, IdempotencyRecord idempotencyRecord, CheckoutLink checkoutLink, CancellationToken cancellationToken);
+    Task AddPaymentAsync(Payment payment, IdempotencyRecord idempotencyRecord, CheckoutLink? checkoutLink, CancellationToken cancellationToken);
     Task AddIdempotencyRecordAsync(IdempotencyRecord record, CancellationToken cancellationToken);
     Task AddAttemptAsync(PaymentAttempt attempt, CancellationToken cancellationToken);
     Task SetAttemptExternalIdAsync(Guid attemptId, string externalId, CancellationToken cancellationToken);
@@ -24,6 +24,7 @@ public interface IPaymentsRepository
     Task<IReadOnlyList<Payment>> ListExpiredActivePaymentsAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
     Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken);
     Task<SavedPaymentMethod?> FindSavedPaymentMethodAsync(Guid shopId, Guid methodId, CancellationToken cancellationToken);
+    Task<SavedPaymentMethodView?> FindSavedPaymentMethodViewAsync(Guid shopId, Guid methodId, CancellationToken cancellationToken);
     Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(Guid shopId, int limit, CancellationToken cancellationToken);
     Task AddSavedPaymentMethodAsync(SavedPaymentMethod method, CancellationToken cancellationToken);
     void ClearTracking();
