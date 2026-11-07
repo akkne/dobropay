@@ -18,6 +18,7 @@ public static class KafkaContracts
     public const string RefundSucceededType = "refund.succeeded";
     public const string RefundCanceledType = "refund.canceled";
     public const string RefundEventPrefix = "refund.";
+    public const string ReceiptSucceededType = "receipt.succeeded";
 
     public static string DeadLetterQueue(string consumer) => $"dobropay.dlq.{consumer}.v1";
 }

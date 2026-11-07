@@ -19,4 +19,7 @@ public static class ErrorCodes
     public const string InvalidConfirmationType = "invalid_confirmation_type";
     public const string PaymentMethodNotFound = "payment_method_not_found";
     public const string InvalidCryptoNetwork = "invalid_crypto_network";
+    public const string InvalidReceipt = "invalid_receipt";
+    public const string ReceiptNotFound = "receipt_not_found";
+    public const string ReceiptLookupQueryRequired = "receipt_lookup_query_required";
 }

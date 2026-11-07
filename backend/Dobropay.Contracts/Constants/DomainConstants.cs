@@ -28,4 +28,15 @@ public static class DomainConstants
     public const string CryptoConfirmingNetworkState = "confirming_network";
     public const string DefaultCardBrand = "Mir";
     public const string WebhookRateLimitPrefix = "webhook-limit:";
+    public const int DefaultTaxSystemCode = 1;
+    public const int DefaultVatCode = 1;
+    public const int MinTaxSystemCode = 1;
+    public const int MaxTaxSystemCode = 6;
+    public const int MinVatCode = 1;
+    public const int MaxVatCode = 6;
+    public const string DefaultReceiptItemQuantity = "1.000";
+    public const string DefaultReceiptItemDescription = "Оплата заказа";
+    public const string DefaultRefundReceiptItemDescription = "Возврат оплаты заказа";
+    public const string SandboxFiscalStoragePrefix = "99990789020";
+    public const string DefaultOfdBaseUrl = "https://ofd.sandbox.dobropay.local/check";
 }
