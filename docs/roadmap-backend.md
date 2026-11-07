@@ -12,7 +12,7 @@
 
 ```mermaid
 flowchart LR
-  B0["Этап 0: Базовый контур (Выполнено)"] --> B1["Этап 1: Hold/Capture, Возвраты и Сверка"]
+  B0["Этап 0: Базовый контур (Выполнено)"] --> B1["Этап 1: Hold/Capture, Возвраты и Сверка (Выполнено)"]
   B1 --> B2["Этап 2: Провайдеры (Карты 3DS, СБП QR, Крипто)"]
   B2 --> B3["Этап 3: Фискализация 54-ФЗ и Поиск чеков"]
   B3 --> B4["Этап 4: Онбординг, RBAC, Webhooks v2 и Пилот"]
@@ -28,37 +28,37 @@ flowchart LR
 
 ---
 
-## Этап 1. Двухстадийные платежи (Hold / Capture), Возвраты и Сверка (`Dobropay.Payments`)
+## Этап 1. Двухстадийные платежи (Hold / Capture), Возвраты и Сверка (`Dobropay.Payments`) — Выполнено
 
 ### Эпик 1.1. Двухстадийная оплата (`waiting_for_capture`, `capture`, `cancel`)
-- **Задача 1.1.1 — Расширение контрактов (`Dobropay.Contracts`)**:
+- [x] **Задача 1.1.1 — Расширение контрактов (`Dobropay.Contracts`)**:
   - Добавить статус `PaymentStatuses.WaitingForCapture = "waiting_for_capture"` и константы причин отмены `PaymentCancellationParties` / `PaymentCancellationReasons`.
   - Добавить маршруты `PublicRouteNames.PaymentCapture = "/v1/payments/{id:guid}/capture"` и `PublicRouteNames.PaymentCancel = "/v1/payments/{id:guid}/cancel"`.
   - Добавить событие `KafkaContracts.PaymentWaitingForCaptureType = "payment.waiting_for_capture"`.
-- **Задача 1.1.2 — Расширение модели EF Core (`payments-db`)**:
+- [x] **Задача 1.1.2 — Расширение модели EF Core (`payments-db`)**:
   - Добавить в сущность `Payment` поля `Capture` (`bool`), `CapturedAmount` (`long?`), `CapturedAt` (`DateTimeOffset?`), `ExpiresAt` (`DateTimeOffset`), `CancellationParty` (`string?`), `CancellationReason` (`string?`).
   - Создать миграцию EF Core для `PaymentsDbContext`.
-- **Задача 1.1.3 — Сервис подтверждения и отмены холда**:
+- [x] **Задача 1.1.3 — Сервис подтверждения и отмены холда**:
   - Спроектировать интерфейс `IPaymentCaptureService` и реализацию `PaymentCaptureService`.
   - Поддержать частичный `capture` (когда `captured_amount < amount`, а разница автоматически разблокируется у провайдера) с проверкой `Idempotency-Key` (`operation = "capture_payment"` / `"cancel_payment"`).
 
 ### Эпик 1.2. Полные и частичные возвраты (`Refunds`)
-- **Задача 1.2.1 — Сущность `Refund` и конфигурация EF Core (`payments-db`)**:
+- [x] **Задача 1.2.1 — Сущность `Refund` и конфигурация EF Core (`payments-db`)**:
   - Создать сущность `Refund` (`Id`, `ShopId`, `PaymentId`, `Amount`, `Currency`, `Status`, `Reason`, `ExternalRefundId`, `CreatedAt`, `CompletedAt`) и `RefundConfiguration : IEntityTypeConfiguration<Refund>` с составным внешним ключом `(ShopId, PaymentId)` на `Payment`.
   - Добавить поле `RefundedAmount` (`long`) в сущность `Payment`.
-- **Задача 1.2.2 — Абстракции и бизнес-логика возвратов**:
+- [x] **Задача 1.2.2 — Абстракции и бизнес-логика возвратов**:
   - Спроектировать `IRefundRepository`, `IRefundService` и расширить `IPaymentProvider` методом `CreateRefundAsync(RefundProviderRequest, CancellationToken)`.
   - Реализовать атомарный контроль остатка: `payment.CapturedAmount - payment.RefundedAmount >= request.Amount` внутри транзакции `IDbSessionFactory` под RLS-контекстом магазина.
   - Публиковать события `refund.succeeded` и `refund.canceled` через `outbox_events` в топик `dobropay.payment-events.v1`.
-- **Задача 1.2.3 — Публичные и внутренние эндпоинты возвратов**:
+- [x] **Задача 1.2.3 — Публичные и внутренние эндпоинты возвратов**:
   - В `Dobropay.Payments`: `POST /v1/refunds`, `GET /v1/refunds/{id:guid}`, `GET /v1/payments/{id:guid}/refunds`, а также внутренний маршрут `GET /internal/v1/shops/{shopId:guid}/refunds`.
   - В `Dobropay.MerchantAdmin`: проксирование списка возвратов и инициация возврата сотрудником магазина (`POST /v1/admin/shops/{shopId:guid}/payments/{id:guid}/refunds`).
 
 ### Эпик 1.3. Фоновая сверка (`Reconciliation`) и автоотмена по таймауту
-- **Задача 1.3.1 — Абстракция сверки провайдера**:
-  - Расширить `IPaymentProvider` методом `GetAttemptStatusAsync(string externalAttemptId, CancellationToken)`.
+- [x] **Задача 1.3.1 — Абстракция сверки провайдера**:
+  - Расширить `IPaymentProvider` методом `GetAttemptStateAsync(string externalAttemptId, CancellationToken)`.
   - Спроектировать `IPaymentReconciliationService` и фоновый воркер `PaymentReconciliationWorker : BackgroundService`.
-- **Задача 1.3.2 — Обработка зависших попыток и просроченных платежей**:
+- [x] **Задача 1.3.2 — Обработка зависших попыток и просроченных платежей**:
   - Опрашивать попытки в статусе `unknown` / `pending` старше настраиваемого интервала (`ReconciliationOptions` из `.env`).
   - Автоматически переводить просроченные платежи (`pending` и `waiting_for_capture` при `expires_at <= UtcNow`) в `canceled` с записью события `payment.canceled` в `outbox_events`.
 
