@@ -14,6 +14,7 @@ public interface IPaymentsRepository
     Task<PaymentAttempt?> FindAttemptByIdAsync(Guid attemptId, CancellationToken cancellationToken);
     Task<PaymentAttempt?> FindTrackedAttemptByIdAsync(Guid shopId, Guid attemptId, CancellationToken cancellationToken);
     Task AddPaymentAsync(Payment payment, IdempotencyRecord idempotencyRecord, CheckoutLink checkoutLink, CancellationToken cancellationToken);
+    Task AddIdempotencyRecordAsync(IdempotencyRecord record, CancellationToken cancellationToken);
     Task AddAttemptAsync(PaymentAttempt attempt, CancellationToken cancellationToken);
     Task SetAttemptExternalIdAsync(Guid attemptId, string externalId, CancellationToken cancellationToken);
     Task AddProviderEventAndOutboxAsync(ProviderInbox inbox, OutboxEvent outboxEvent, CancellationToken cancellationToken);

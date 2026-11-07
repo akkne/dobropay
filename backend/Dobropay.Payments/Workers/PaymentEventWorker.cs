@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Dobropay.Contracts.Constants;
 using Dobropay.Contracts.Events;
@@ -19,6 +18,7 @@ public sealed class PaymentEventWorker(
     private const int ReceiveTimeoutMilliseconds = 100;
     private const int CycleDelayMilliseconds = 500;
     private const int MaxWaitAttempts = 5;
+    private const int HoldLifetimeMinutes = 30;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -145,23 +145,40 @@ public sealed class PaymentEventWorker(
 
         if (decision == ConfirmationDecision.Apply && payment is not null && attempt is not null && snapshot is not null)
         {
-            payment.Status = incoming.Outcome;
-            payment.UpdatedAt = DateTimeOffset.UtcNow;
+            var now = DateTimeOffset.UtcNow;
+            var targetStatus = PaymentRules.ResolveAttemptOutcome(incoming.Outcome, payment.Capture);
+            payment.Status = targetStatus;
+            payment.UpdatedAt = now;
             attempt.State = incoming.Outcome;
+
+            if (targetStatus == PaymentRules.Succeeded)
+            {
+                payment.CapturedAmount = payment.Amount;
+                payment.CapturedAt = now;
+            }
+            else if (targetStatus == PaymentRules.WaitingForCapture)
+            {
+                payment.ExpiresAt = now.AddMinutes(HoldLifetimeMinutes);
+            }
+            else if (targetStatus == PaymentRules.Canceled)
+            {
+                payment.CancellationParty = PaymentCancellationParties.PaymentNetwork;
+                payment.CancellationReason = PaymentCancellationReasons.ProviderDeclined;
+            }
 
             var payload = JsonSerializer.SerializeToElement(new
             {
                 id = envelope.PaymentId,
-                status = incoming.Outcome,
+                status = targetStatus,
                 amount = snapshot.Amount,
                 currency = snapshot.Currency
             });
 
             var businessEnvelope = new EventEnvelope(
                 Guid.NewGuid(),
-                KafkaContracts.PaymentEventPrefix + incoming.Outcome,
+                KafkaContracts.PaymentEventPrefix + targetStatus,
                 ContractVersions.EventSchema,
-                DateTimeOffset.UtcNow,
+                now,
                 envelope.ShopId,
                 envelope.PaymentId,
                 envelope.CorrelationId,

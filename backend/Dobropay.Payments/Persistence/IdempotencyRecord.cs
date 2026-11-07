@@ -7,4 +7,5 @@ public sealed class IdempotencyRecord
     public string IdempotencyKey { get; set; } = string.Empty;
     public string RequestHash { get; set; } = string.Empty;
     public Guid PaymentId { get; set; }
+    public Guid? ResourceId { get; set; }
 }
