@@ -11,9 +11,13 @@ public static class KafkaContracts
     public const string NotificationsPaymentConsumerName = "notifications-payment-events";
     public const string ReceiptsPaymentConsumerName = "receipts-payment-events";
     public const string ProviderEventAcceptedType = "provider.event.accepted";
+    public const string PaymentWaitingForCaptureType = "payment.waiting_for_capture";
     public const string PaymentSucceededType = "payment.succeeded";
     public const string PaymentCanceledType = "payment.canceled";
     public const string PaymentEventPrefix = "payment.";
+    public const string RefundSucceededType = "refund.succeeded";
+    public const string RefundCanceledType = "refund.canceled";
+    public const string RefundEventPrefix = "refund.";
 
     public static string DeadLetterQueue(string consumer) => $"dobropay.dlq.{consumer}.v1";
 }
