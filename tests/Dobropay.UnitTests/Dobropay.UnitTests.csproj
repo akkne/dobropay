@@ -19,7 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\backend\Dobropay.Core\Dobropay.Core.csproj" />
+    <ProjectReference Include="..\..\backend\Dobropay.Contracts\Dobropay.Contracts.csproj" />
+    <ProjectReference Include="..\..\backend\Dobropay.Payments\Dobropay.Payments.csproj" />
   </ItemGroup>
 
 </Project>

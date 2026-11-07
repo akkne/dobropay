@@ -6,4 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Dobropay.Contracts/Dobropay.Contracts.csproj" />
+    <ProjectReference Include="../Dobropay.Messaging/Dobropay.Messaging.csproj" />
+  </ItemGroup>
+
 </Project>

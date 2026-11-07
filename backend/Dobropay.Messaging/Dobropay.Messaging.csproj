@@ -9,7 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="../Dobropay.Contracts/Dobropay.Contracts.csproj" />
     <PackageReference Include="Confluent.Kafka" Version="2.10.0" />
-    <PackageReference Include="Npgsql" Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="3.4.29" />
   </ItemGroup>
 
 </Project>

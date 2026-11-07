@@ -42,13 +42,14 @@
   - fallback-значения с секретами или адресами в коде (например, `config["Redis:Connection"] ?? "redis:6379"` или дизайн-тайм строки с захардкоженным паролем).
 - Доступ к настройкам в сервисах осуществляется через строго типизированные классы настроек (`*Options`), привязанные к секциям конфигурации или переменным окружения с обязательной валидацией при старте.
 
-## 6. Чистая работа с БД (Database-per-Service) и инфраструктурой
+## 6. Чистая работа с БД (Database-per-Service, только EF Core) и инфраструктурой
 
-- **Database-per-Service**: каждый сервис с персистентностью владеет своей собственной изолированной базой данных в отдельном контейнере PostgreSQL. Сервисы никогда не разделяют физический сервер БД и не обращаются к таблицам друг друга.
-- **Подключение к БД**:
-  - Оформляется через абстракцию фабрики/сессии подключения (например, `IDbSessionFactory` / `IDbConnectionFactory`) и репозитории (`I*Repository`).
-  - Контекст магазина для PostgreSQL RLS (`app.shop_id`) устанавливается централизованно внутри абстракции транзакционной сессии БД, а не копипастой SQL-запросов по всему коду.
+- **Database-per-Service**: каждый сервис с персистентностью владеет своей собственной изолированной базой данных в отдельном контейнере PostgreSQL (`auth-db`, `merchant-dev-db`, `payments-db`, `notifications-db`, `receipts-db`). Сервисы никогда не разделяют физический сервер БД и не обращаются к таблицам друг друга.
+- **Никакого Raw SQL — только EF Core**:
+  - Запрещено использовать `NpgsqlConnection`, `NpgsqlCommand`, `ExecuteSqlRaw`, `FromSqlRaw` и любые рукописные SQL-строки в коде приложения.
+  - Вся работа с базой данных строится строго через Entity Framework Core: `DbContext`, конфигурации сущностей (`IEntityTypeConfiguration<T>`), LINQ-запросы, `IUnitOfWork` и типизированные репозитории (`I*Repository`).
+  - Подключение к БД регистрируется централизованно через типизированные `DatabaseOptions` и расширение DI.
 - **Чистое взаимодействие с Kafka, Redis и SMTP**:
-  - Kafka producer и consumer инкапсулируются за интерфейсами (`IEventPublisher`, `IEventSubscriber`) в `Dobropay.Messaging` и регистрируются в DI.
-  - Redis инкапсулируется за интерфейсом лимитера (`IWebhookRateLimiter`) с переиспользуемым подключением.
-  - SMTP и межсервисные HTTP-вызовы инкапсулируются за типизированными клиентами (`IEmailSender`, `IAuthInternalClient`, `IDeveloperApiInternalClient` и т.д.).
+  - Kafka producer и consumer инкапсулируются за интерфейсами (`IEventPublisher`, `IEventSubscriber`, `IKafkaClientFactory`) с настройкой через `KafkaOptions`.
+  - Redis инкапсулируется за интерфейсами (`IRedisConnectionProvider`, `IRateLimiter`) с настройкой через `RedisOptions`.
+  - SMTP инкапсулируется за интерфейсом (`IEmailSender`) с настройкой через `SmtpOptions`.

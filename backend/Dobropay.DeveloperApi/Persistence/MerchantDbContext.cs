@@ -1,27 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 
 namespace Dobropay.DeveloperApi.Persistence;
-
-public sealed class Shop
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = "";
-}
-
-public sealed class ApiCredential
-{
-    public Guid Id { get; set; }
-    public Guid ShopId { get; set; }
-    public string KeyHash { get; set; } = "";
-}
-
-public sealed class ShopMembership
-{
-    public Guid ShopId { get; set; }
-    public Guid AccountId { get; set; }
-    public string Role { get; set; } = "owner";
-}
 
 public sealed class MerchantDbContext(DbContextOptions<MerchantDbContext> options) : DbContext(options)
 {
@@ -31,26 +10,35 @@ public sealed class MerchantDbContext(DbContextOptions<MerchantDbContext> option
 
     protected override void OnModelCreating(ModelBuilder model)
     {
-        model.Entity<Shop>().ToTable("shops").HasKey(x => x.Id);
-        model.Entity<Shop>().Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
-        model.Entity<Shop>().Property(x => x.Id).HasColumnName("id");
+        model.Entity<Shop>(entity =>
+        {
+            entity.ToTable(MerchantSchemaConstants.ShopsTable).HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName(MerchantSchemaConstants.IdColumn);
+            entity.Property(x => x.Name)
+                .HasColumnName(MerchantSchemaConstants.NameColumn)
+                .HasMaxLength(MerchantSchemaConstants.MaxShopNameLength);
+        });
 
-        model.Entity<ApiCredential>().ToTable("api_credentials").HasKey(x => x.Id);
-        model.Entity<ApiCredential>().Property(x => x.Id).HasColumnName("id");
-        model.Entity<ApiCredential>().Property(x => x.ShopId).HasColumnName("shop_id");
-        model.Entity<ApiCredential>().Property(x => x.KeyHash).HasColumnName("key_hash").HasMaxLength(64);
-        model.Entity<ApiCredential>().HasIndex(x => x.KeyHash).IsUnique();
-        model.Entity<ApiCredential>().HasIndex(x => new { x.ShopId, x.Id }).IsUnique();
+        model.Entity<ApiCredential>(entity =>
+        {
+            entity.ToTable(MerchantSchemaConstants.ApiCredentialsTable).HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName(MerchantSchemaConstants.IdColumn);
+            entity.Property(x => x.ShopId).HasColumnName(MerchantSchemaConstants.ShopIdColumn);
+            entity.Property(x => x.KeyHash)
+                .HasColumnName(MerchantSchemaConstants.KeyHashColumn)
+                .HasMaxLength(MerchantSchemaConstants.KeyHashLength);
+            entity.HasIndex(x => x.KeyHash).IsUnique();
+            entity.HasIndex(x => new { x.ShopId, x.Id }).IsUnique();
+        });
 
-        model.Entity<ShopMembership>().ToTable("shop_memberships").HasKey(x => new { x.ShopId, x.AccountId });
-        model.Entity<ShopMembership>().Property(x => x.ShopId).HasColumnName("shop_id");
-        model.Entity<ShopMembership>().Property(x => x.AccountId).HasColumnName("account_id");
-        model.Entity<ShopMembership>().Property(x => x.Role).HasColumnName("role").HasMaxLength(32);
+        model.Entity<ShopMembership>(entity =>
+        {
+            entity.ToTable(MerchantSchemaConstants.ShopMembershipsTable).HasKey(x => new { x.ShopId, x.AccountId });
+            entity.Property(x => x.ShopId).HasColumnName(MerchantSchemaConstants.ShopIdColumn);
+            entity.Property(x => x.AccountId).HasColumnName(MerchantSchemaConstants.AccountIdColumn);
+            entity.Property(x => x.Role)
+                .HasColumnName(MerchantSchemaConstants.RoleColumn)
+                .HasMaxLength(MerchantSchemaConstants.MaxRoleLength);
+        });
     }
-}
-
-public sealed class DesignTimeFactory : IDesignTimeDbContextFactory<MerchantDbContext>
-{
-    public MerchantDbContext CreateDbContext(string[] args) => new(new DbContextOptionsBuilder<MerchantDbContext>()
-        .UseNpgsql("Host=localhost;Database=merchant_dev_db;Username=postgres;Password=local-postgres-password").Options);
 }
