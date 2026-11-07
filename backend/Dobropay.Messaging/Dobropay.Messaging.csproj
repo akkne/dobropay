@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../Dobropay.Contracts/Dobropay.Contracts.csproj" />
     <PackageReference Include="Confluent.Kafka" Version="2.10.0" />
+    <PackageReference Include="Npgsql" Version="10.0.0" />
   </ItemGroup>
 
 </Project>
