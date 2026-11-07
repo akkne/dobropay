@@ -24,4 +24,8 @@ public static class ConfigurationKeyNames
     public const string SmtpFrom = "Smtp:From";
     public const string DemoReceiptEmail = "Demo:ReceiptEmail";
     public const string DesignTimeConnectionEnv = "DESIGN_TIME_CONNECTION_STRING";
+    public const string ReconciliationIntervalSeconds = "Reconciliation:IntervalSeconds";
+    public const string ReconciliationAttemptStaleSeconds = "Reconciliation:AttemptStaleSeconds";
+    public const string PaymentExpirationMinutes = "Payments:ExpirationMinutes";
+    public const string PaymentCaptureExpirationMinutes = "Payments:CaptureExpirationMinutes";
 }
