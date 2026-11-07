@@ -1,32 +1,49 @@
-# Локальная разработка
+# Локальная разработка и проверка изоляции (DB-per-Service & RLS)
 
-Требуются .NET SDK 10, Docker Desktop/Compose; для примеров README также `curl` и `jq`. Скопируйте `.env.example` в `.env`. `.env` не попадает в Git. Значения в примере служат только локальной песочнице.
+Требуются .NET SDK 10, Docker Desktop / Docker Compose, `curl` и `jq`.
 
-`docker compose up -d --build` запускает PostgreSQL, одноразовый `setup`, API и Worker. `setup` вызывает `Database.MigrateAsync()` для code-first EF Core migrations в `src/Dobropay.Infrastructure/Migrations`, затем повторяемо создаёт два магазина: `11111111-1111-4111-8111-111111111111` и `22222222-2222-4222-8222-222222222222`. Ключи берутся из `DEMO_KEY_A/B`, в БД хранятся SHA-256 хеши. `DEMO_WEBHOOK_URL` в Compose фиксирован как `http://api:8080/local/webhooks/receiver`.
+## 1. Подготовка окружения и запуск
 
-Параметры: `POSTGRES_PASSWORD`, `API_DB_PASSWORD`, `WORKER_DB_PASSWORD`, `MIGRATOR_DB_PASSWORD`, `DEMO_KEY_A`, `DEMO_KEY_B`, `CHECKOUT_SECRET`, `PROVIDER_SECRET`, `WEBHOOK_SECRET`. Настройки подключения задаются процессам через `ConnectionStrings__Migration`, `ConnectionStrings__Api`, `ConnectionStrings__Worker`; `Sandbox__Enabled` включает локальные маршруты. API валидирует критичные секреты и строку подключения при старте. В `appsettings.json` только несекретные настройки.
+1. Скопируйте шаблон переменных окружения:
+   ```bash
+   cp .env.example .env
+   ```
+   Файл `.env` содержит все локальные пароли, строки подключения, ключи и адреса сервисов и не коммитится в Git.
+2. Соберите и запустите весь контур:
+   ```bash
+   docker compose up -d --build
+   docker compose ps
+   ```
+
+Контур поднимает:
+- 5 отдельных контейнеров PostgreSQL (`auth-db`, `merchant-dev-db`, `payments-db`, `notifications-db`, `receipts-db`);
+- брокер `kafka` (KRaft) и `kafka-init` (создание топиков);
+- `redis` и `mailpit` (`http://localhost:8025`);
+- одноразовый сервис `setup` (настройка ролей, применение EF Core миграций во всех 5 БД и создание двух демо-магазинов и тестового сотрудника);
+- 7 микросервисов (`auth`, `developer-api`, `payments`, `notifications`, `email`, `receipts`, `merchant-admin`) и `gateway` (`http://localhost:8080`).
+
+## 2. Полезные команды
 
 ```bash
-docker compose ps
-docker compose logs setup api worker
-docker compose restart api worker
+dotnet build Dobropay.slnx -warnaserror
+dotnet test Dobropay.slnx --no-build
+docker compose logs setup payments notifications receipts
+docker compose run --rm setup
 docker compose down
-docker compose down -v  # удаляет только локальный том PostgreSQL
+docker compose down -v
 ```
 
-Миграции применяются **до** старта API и Worker зависимостью Compose. Первичная локальная инициализация выполняется bootstrap-подключением `postgres`; после неё создаётся отдельная роль `dobropay_migrator` с правом DDL, а таблицы принадлежат `dobropay_owner`. Runtime-роли этими правами не обладают. Повторно применить миграции и обновить демо-данные: `docker compose run --rm setup`. Для новой модели: `dotnet ef migrations add <Name> --project src/Dobropay.Infrastructure --startup-project src/Dobropay.Infrastructure --output-dir Migrations`; миграция безопасности хранит SQL политик как встроенный ресурс `db/security.sql`.
+## 3. Проверка RLS и ролевой изоляции под рабочей ролью
 
-## Проверка RLS под runtime-ролью
-
-Пример ниже выполняется после создания платежа первого магазина; подставьте его ID. Команды выполняются именно под `dobropay_api`, без `BYPASSRLS`:
+После создания платежа первого магазина (`11111111-1111-4111-8111-111111111111`) проверьте RLS непосредственно в контейнере `payments-db` под ролью `payments_runtime` (не имеющей `SUPERUSER` и `BYPASSRLS`):
 
 ```bash
-docker compose exec db psql -U dobropay_api -d dobropay
+docker compose exec payments-db psql -U payments_runtime -d payments_db
 BEGIN;
-SELECT set_config('app.shop_id','11111111-1111-4111-8111-111111111111',true);
-SELECT id,shop_id FROM payments WHERE id='<payment-id>';
+SELECT set_config('app.shop_id', '11111111-1111-4111-8111-111111111111', true);
+SELECT id, shop_id, status FROM payments;
 COMMIT;
-SELECT count(*) FROM payments; -- 0: локальный контекст завершился
+SELECT count(*) FROM payments; -- 0: транзакция завершена, контекст магазина сброшен
 ```
 
-Для второго магазина установите `22222222-2222-4222-8222-222222222222`: тот же ID не виден. В транзакции с контекстом A `INSERT INTO payments(id,shop_id,amount,currency,status) VALUES (gen_random_uuid(),'22222222-2222-4222-8222-222222222222',100,'RUB','pending')` отклоняется политикой `WITH CHECK`; после ошибки выполните `ROLLBACK`.
+Попытка прочитать платёж первого магазина под контекстом второго (`22222222-2222-4222-8222-222222222222`) возвращает 0 строк, а попытка вставить строку с чужим `shop_id` отклоняется политикой `WITH CHECK`.
