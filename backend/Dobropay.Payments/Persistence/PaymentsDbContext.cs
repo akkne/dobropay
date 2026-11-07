@@ -1,3 +1,4 @@
+using Dobropay.Contracts.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dobropay.Payments.Persistence;
@@ -11,6 +12,7 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
     public DbSet<ProviderInbox> ProviderInbox => Set<ProviderInbox>();
     public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
     public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<SavedPaymentMethod> SavedPaymentMethods => Set<SavedPaymentMethod>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +24,13 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
             entity.HasIndex(x => new { x.Status, x.ExpiresAt });
             entity.Property(x => x.Capture).HasDefaultValue(true);
             entity.Property(x => x.RefundedAmount).HasDefaultValue(0L);
+            entity.Property(x => x.SavePaymentMethod).HasDefaultValue(false);
+            entity.Property(x => x.PaymentMethodType)
+                .HasMaxLength(PaymentsSchemaConstants.PaymentMethodTypeMaxLength)
+                .HasDefaultValue(PaymentMethodTypes.Sandbox);
+            entity.Property(x => x.ConfirmationType)
+                .HasMaxLength(PaymentsSchemaConstants.ConfirmationTypeMaxLength)
+                .HasDefaultValue(ConfirmationTypes.Redirect);
             entity.Property(x => x.ExpiresAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
             entity.Property(x => x.CreatedAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
             entity.Property(x => x.UpdatedAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
@@ -52,6 +61,17 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
             entity.HasIndex(x => new { x.ShopId, x.PaymentId }).IsUnique();
             entity.HasIndex(x => x.ExternalId).IsUnique();
             entity.HasIndex(x => x.OperationKey).IsUnique();
+            entity.Property(x => x.PaymentMethodType)
+                .HasMaxLength(PaymentsSchemaConstants.PaymentMethodTypeMaxLength)
+                .HasDefaultValue(PaymentMethodTypes.Sandbox);
+            entity.Property(x => x.SbpQrcId).HasMaxLength(PaymentsSchemaConstants.SbpIdMaxLength);
+            entity.Property(x => x.SbpOperationId).HasMaxLength(PaymentsSchemaConstants.SbpIdMaxLength);
+            entity.Property(x => x.PayerBankId).HasMaxLength(PaymentsSchemaConstants.SbpIdMaxLength);
+            entity.Property(x => x.CryptoCurrency).HasMaxLength(PaymentsSchemaConstants.CryptoCurrencyMaxLength);
+            entity.Property(x => x.CryptoNetwork).HasMaxLength(PaymentsSchemaConstants.CryptoNetworkMaxLength);
+            entity.Property(x => x.CryptoAmount).HasMaxLength(PaymentsSchemaConstants.CryptoAmountMaxLength);
+            entity.Property(x => x.DepositAddress).HasMaxLength(PaymentsSchemaConstants.DepositAddressMaxLength);
+            entity.Property(x => x.TxHash).HasMaxLength(PaymentsSchemaConstants.TxHashMaxLength);
             entity.Property(x => x.CreatedAt).HasDefaultValueSql(PaymentsSchemaConstants.NowDefaultValueExpression);
         });
 
@@ -81,6 +101,7 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
         });
 
         modelBuilder.ApplyConfiguration(new RefundConfiguration());
+        modelBuilder.ApplyConfiguration(new SavedPaymentMethodConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

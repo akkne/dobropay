@@ -151,5 +151,38 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
     public async Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken) =>
         await dbContext.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
 
+    public Task<SavedPaymentMethod?> FindSavedPaymentMethodAsync(
+        Guid shopId,
+        Guid methodId,
+        CancellationToken cancellationToken) =>
+        dbContext.SavedPaymentMethods
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.ShopId == shopId && x.Id == methodId, cancellationToken);
+
+    public async Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(
+        Guid shopId,
+        int limit,
+        CancellationToken cancellationToken) =>
+        await dbContext.SavedPaymentMethods
+            .AsNoTracking()
+            .Where(x => x.ShopId == shopId)
+            .OrderByDescending(x => x.SavedAt)
+            .Take(limit)
+            .Select(x => new SavedPaymentMethodView(
+                x.Id,
+                x.Type,
+                x.CardFirst6,
+                x.CardLast4,
+                x.ExpiryMonth,
+                x.ExpiryYear,
+                x.CardBrand,
+                x.SavedAt))
+            .ToListAsync(cancellationToken);
+
+    public async Task AddSavedPaymentMethodAsync(
+        SavedPaymentMethod method,
+        CancellationToken cancellationToken) =>
+        await dbContext.SavedPaymentMethods.AddAsync(method, cancellationToken);
+
     public void ClearTracking() => dbContext.ChangeTracker.Clear();
 }

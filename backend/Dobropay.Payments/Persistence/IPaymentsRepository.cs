@@ -23,5 +23,8 @@ public interface IPaymentsRepository
     Task<IReadOnlyList<PaymentAttempt>> ListStaleUnknownAttemptsAsync(DateTimeOffset createdBefore, int limit, CancellationToken cancellationToken);
     Task<IReadOnlyList<Payment>> ListExpiredActivePaymentsAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
     Task AddOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken);
+    Task<SavedPaymentMethod?> FindSavedPaymentMethodAsync(Guid shopId, Guid methodId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(Guid shopId, int limit, CancellationToken cancellationToken);
+    Task AddSavedPaymentMethodAsync(SavedPaymentMethod method, CancellationToken cancellationToken);
     void ClearTracking();
 }
