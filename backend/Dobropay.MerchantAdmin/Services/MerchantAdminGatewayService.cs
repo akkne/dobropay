@@ -1,4 +1,6 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using Dobropay.Contracts.Constants;
 using Dobropay.MerchantAdmin.Models;
 
@@ -15,6 +17,78 @@ public sealed class MerchantAdminGatewayService(
         string resourcePath,
         CancellationToken cancellationToken)
     {
+        var client = httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add(HttpHeaderNames.InternalKey, options.InternalServiceKey);
+
+        var authFailure = await AuthorizeShopAccessAsync(client, authorizationHeader, shopId, cancellationToken);
+        if (authFailure is not null)
+        {
+            return authFailure;
+        }
+
+        using var downstreamResponse = await client.GetAsync(
+            $"{targetBaseUrl}{InternalRouteNames.ShopByIdPrefix}{shopId}/{resourcePath}",
+            cancellationToken);
+        var json = await downstreamResponse.Content.ReadAsStringAsync(cancellationToken);
+
+        return Results.Content(
+            json,
+            DomainConstants.ApplicationJsonContentType,
+            statusCode: (int)downstreamResponse.StatusCode);
+    }
+
+    public async Task<IResult> ForwardShopCommandAsync(
+        string? authorizationHeader,
+        string? idempotencyKey,
+        Guid shopId,
+        string targetBaseUrl,
+        string resourcePath,
+        Stream requestBody,
+        CancellationToken cancellationToken)
+    {
+        var client = httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add(HttpHeaderNames.InternalKey, options.InternalServiceKey);
+
+        var authFailure = await AuthorizeShopAccessAsync(client, authorizationHeader, shopId, cancellationToken);
+        if (authFailure is not null)
+        {
+            return authFailure;
+        }
+
+        using var memoryStream = new MemoryStream();
+        await requestBody.CopyToAsync(memoryStream, cancellationToken);
+        var bodyBytes = memoryStream.Length > 0
+            ? memoryStream.ToArray()
+            : Encoding.UTF8.GetBytes(DomainConstants.EmptyJsonObject);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"{targetBaseUrl}{InternalRouteNames.ShopByIdPrefix}{shopId}/{resourcePath}")
+        {
+            Content = new ByteArrayContent(bodyBytes)
+        };
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue(DomainConstants.ApplicationJsonContentType);
+
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            request.Headers.Add(HttpHeaderNames.IdempotencyKey, idempotencyKey);
+        }
+
+        using var downstreamResponse = await client.SendAsync(request, cancellationToken);
+        var json = await downstreamResponse.Content.ReadAsStringAsync(cancellationToken);
+
+        return Results.Content(
+            json,
+            DomainConstants.ApplicationJsonContentType,
+            statusCode: (int)downstreamResponse.StatusCode);
+    }
+
+    private async Task<IResult?> AuthorizeShopAccessAsync(
+        HttpClient client,
+        string? authorizationHeader,
+        Guid shopId,
+        CancellationToken cancellationToken)
+    {
         if (string.IsNullOrWhiteSpace(authorizationHeader) ||
             !authorizationHeader.StartsWith(AuthSchemeNames.BearerPrefix, StringComparison.OrdinalIgnoreCase))
         {
@@ -22,8 +96,6 @@ public sealed class MerchantAdminGatewayService(
         }
 
         var token = authorizationHeader[AuthSchemeNames.BearerPrefix.Length..];
-        var client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(HttpHeaderNames.InternalKey, options.InternalServiceKey);
 
         using var sessionResponse = await client.PostAsJsonAsync(
             options.AuthBaseUrl + InternalRouteNames.ResolveSession,
@@ -48,14 +120,6 @@ public sealed class MerchantAdminGatewayService(
             return Results.NotFound();
         }
 
-        using var downstreamResponse = await client.GetAsync(
-            $"{targetBaseUrl}{InternalRouteNames.ShopByIdPrefix}{shopId}/{resourcePath}",
-            cancellationToken);
-        var json = await downstreamResponse.Content.ReadAsStringAsync(cancellationToken);
-
-        return Results.Content(
-            json,
-            DomainConstants.ApplicationJsonContentType,
-            statusCode: (int)downstreamResponse.StatusCode);
+        return null;
     }
 }

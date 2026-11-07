@@ -38,6 +38,76 @@ public static class MerchantAdminEndpoints
                 $"{InternalRouteNames.PaymentsSuffix}/{id}",
                 ct));
 
+        app.MapGet(PublicRouteNames.AdminShopRefunds, (
+            HttpContext http,
+            Guid shopId,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.ForwardShopResourceAsync(
+                http.Request.Headers.Authorization.ToString(),
+                shopId,
+                options.PaymentsBaseUrl,
+                InternalRouteNames.RefundsSuffix,
+                ct));
+
+        app.MapGet(PublicRouteNames.AdminShopPaymentRefunds, (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.ForwardShopResourceAsync(
+                http.Request.Headers.Authorization.ToString(),
+                shopId,
+                options.PaymentsBaseUrl,
+                $"{InternalRouteNames.PaymentsSuffix}/{id}/{InternalRouteNames.RefundsSuffix}",
+                ct));
+
+        app.MapPost(PublicRouteNames.AdminShopPaymentRefunds, (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.ForwardShopCommandAsync(
+                http.Request.Headers.Authorization.ToString(),
+                http.Request.Headers[HttpHeaderNames.IdempotencyKey].ToString(),
+                shopId,
+                options.PaymentsBaseUrl,
+                $"{InternalRouteNames.PaymentsSuffix}/{id}/{InternalRouteNames.RefundsSuffix}",
+                http.Request.Body,
+                ct));
+
+        app.MapPost(PublicRouteNames.AdminShopPaymentCapture, (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.ForwardShopCommandAsync(
+                http.Request.Headers.Authorization.ToString(),
+                http.Request.Headers[HttpHeaderNames.IdempotencyKey].ToString(),
+                shopId,
+                options.PaymentsBaseUrl,
+                $"{InternalRouteNames.PaymentsSuffix}/{id}/{InternalRouteNames.CaptureSuffix}",
+                http.Request.Body,
+                ct));
+
+        app.MapPost(PublicRouteNames.AdminShopPaymentCancel, (
+            HttpContext http,
+            Guid shopId,
+            Guid id,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.ForwardShopCommandAsync(
+                http.Request.Headers.Authorization.ToString(),
+                http.Request.Headers[HttpHeaderNames.IdempotencyKey].ToString(),
+                shopId,
+                options.PaymentsBaseUrl,
+                $"{InternalRouteNames.PaymentsSuffix}/{id}/{InternalRouteNames.CancelSuffix}",
+                http.Request.Body,
+                ct));
+
         app.MapGet(PublicRouteNames.AdminShopDeliveries, (
             HttpContext http,
             Guid shopId,
