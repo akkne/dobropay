@@ -13,3 +13,8 @@ TestResults/
 *.log
 *.db
 *.sqlite
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
