@@ -15,7 +15,7 @@ flowchart LR
   B0["Этап 0: Базовый контур (Выполнено)"] --> B1["Этап 1: Hold/Capture, Возвраты и Сверка (Выполнено)"]
   B1 --> B2["Этап 2: Провайдеры (Карты 3DS, СБП QR, Крипто) (Выполнено)"]
   B2 --> B3["Этап 3: Фискализация 54-ФЗ и Поиск чеков (Выполнено)"]
-  B3 --> B4["Этап 4: Онбординг, RBAC, Webhooks v2 и Пилот"]
+  B3 --> B4["Этап 4: Онбординг, RBAC, Webhooks v2 и Пилот (Выполнено)"]
 ```
 
 ---
@@ -112,25 +112,25 @@ flowchart LR
 
 ---
 
-## Этап 4. Онбординг магазина, RBAC, Webhooks v2 и Production Readiness
+## Этап 4. Онбординг магазина, RBAC, Webhooks v2 и Production Readiness — Выполнено
 
 ### Эпик 4.1. Регистрация, 3-шаговый онбординг и роли (`Dobropay.Auth` & `Dobropay.DeveloperApi`)
-- **Задача 4.1.1 — Регистрация и управление сессиями в `Dobropay.Auth`**:
+- [x] **Задача 4.1.1 — Регистрация и управление сессиями в `Dobropay.Auth`**:
   - Добавить `POST /v1/auth/register`, `POST /v1/auth/refresh`, `POST /v1/auth/logout` и `GET /v1/auth/me`.
-- **Задача 4.1.2 — Анкета организации и статусы подключения в `Dobropay.DeveloperApi` (`merchant-dev-db`)**:
+- [x] **Задача 4.1.2 — Анкета организации и статусы подключения в `Dobropay.DeveloperApi` (`merchant-dev-db`)**:
   - Создать сущность `ShopOnboardingProfile` (`ShopId`, `Inn`, `Ogrn`, `LegalName`, `BankBic`, `BankAccount`, `WebsiteUrl`, `VerificationStatus` [`draft`, `under_review`, `approved`, `rejected`]).
   - Добавить маршруты `POST /v1/developer/shops`, `PUT /v1/developer/shops/{shopId:guid}/onboarding`, `POST /v1/developer/shops/{shopId:guid}/onboarding/submit`.
   - Поддержать выпуск как тестовых (`dp_test_*`), так и боевых (`dp_live_*`) ключей, а также отзыв ключа (`DELETE /v1/developer/shops/{shopId:guid}/keys/{keyId:guid}`).
 
 ### Эпик 4.2. Развитие `Dobropay.Notifications` (SSRF-защита, типы событий, ретраи)
-- **Задача 4.2.1 — Защита от SSRF (`IWebhookUrlValidator`)**:
+- [x] **Задача 4.2.1 — Защита от SSRF (`IWebhookUrlValidator`)**:
   - Реализовать проверку целевого URL подписки и DNS-резолвинга (запрет приватных и loopback IP в боевом профиле).
-- **Задача 4.2.2 — Подписки по типам событий и ручной повтор**:
+- [x] **Задача 4.2.2 — Подписки по типам событий и ручной повтор**:
   - Поддержать фильтрацию по `event_types` (`payment.waiting_for_capture`, `payment.succeeded`, `payment.canceled`, `refund.succeeded`, `receipt.succeeded`).
   - Добавить маршрут ручного переотправления доставки `POST /v1/admin/shops/{shopId:guid}/deliveries/{deliveryId:guid}/retry` в `MerchantAdmin` → `Notifications`.
 
 ### Эпик 4.3. Наблюдаемость и тестирование (Production Readiness)
-- **Задача 4.3.1 — OpenTelemetry и метрики**:
+- [x] **Задача 4.3.1 — OpenTelemetry и метрики**:
   - Вынести метрики `dobropay_outbox_pending_count`, `dobropay_kafka_consumer_lag`, `dobropay_webhook_delivery_failures_total`, `dobropay_payments_total` через `IMetricsRecorder`.
-- **Задача 4.3.2 — Модульные и интеграционные тесты (`tests/Dobropay.UnitTests`)**:
+- [x] **Задача 4.3.2 — Модульные и интеграционные тесты (`tests/Dobropay.UnitTests`)**:
   - Покрыть тестами переходы `waiting_for_capture -> succeeded/canceled`, расчёт частичных возвратов, валидацию SSRF, генерацию чеков 54-ФЗ и идемпотентность всех мутирующих операций.
