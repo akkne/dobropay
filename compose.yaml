@@ -313,8 +313,22 @@ services:
       Services__Notifications: ${NOTIFICATIONS_SERVICE_URL}
       Services__Receipts: ${RECEIPTS_SERVICE_URL}
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    expose:
+      - "3000"
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+
   gateway:
     image: caddy:2.10.2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:-:8080}
     depends_on:
       auth:
         condition: service_started
@@ -326,10 +340,16 @@ services:
         condition: service_started
       notifications:
         condition: service_started
+      frontend:
+        condition: service_started
     ports:
-      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
+      - "${GATEWAY_HTTP_PORT:-80}:80"
+      - "${GATEWAY_HTTPS_PORT:-443}:443"
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   auth_db_data:
@@ -338,3 +358,5 @@ volumes:
   notifications_db_data:
   receipts_db_data:
   kafka_data:
+  caddy_data:
+  caddy_config:

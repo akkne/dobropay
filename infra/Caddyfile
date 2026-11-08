@@ -1,4 +1,16 @@
-:8080 {
+{$DOMAIN::8080} {
+    @cors_preflight method OPTIONS
+    handle @cors_preflight {
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization, X-Api-Key, Idempotency-Key"
+        respond 204
+    }
+
+    header Access-Control-Allow-Origin "*"
+    header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization, X-Api-Key, Idempotency-Key"
+
     handle /v1/auth/* {
         reverse_proxy auth:8080
     }
@@ -17,7 +29,16 @@
     handle /v1/payment-methods* {
         reverse_proxy payments:8080
     }
-    handle /checkout/* {
+    handle /v1/checkout/* {
+        reverse_proxy payments:8080
+    }
+    handle /checkout/*/session {
+        reverse_proxy payments:8080
+    }
+    handle /checkout/*/start {
+        reverse_proxy payments:8080
+    }
+    handle /checkout/*/simulate/* {
         reverse_proxy payments:8080
     }
     handle /v1/provider/* {
@@ -26,7 +47,7 @@
     handle /v1/receipts* {
         reverse_proxy receipts:8080
     }
-    handle /local/webhooks/received {
+    handle /local/webhooks/* {
         reverse_proxy notifications:8080
     }
     handle /health/live {
@@ -35,7 +56,9 @@
     handle /health/ready {
         reverse_proxy payments:8080
     }
+
+    # Frontend Next.js routes (/checkout/:token, /checkout/:token/simulator, /admin, /)
     handle {
-        respond "not found" 404
+        reverse_proxy frontend:3000
     }
 }
