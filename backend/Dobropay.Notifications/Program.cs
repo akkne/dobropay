@@ -29,6 +29,7 @@ builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddRedisRateLimiting(builder.Configuration);
 builder.Services.AddInternalSecurity(builder.Configuration);
 builder.Services.AddSingleton<IWebhookSignatureService, WebhookSignatureService>();
+builder.Services.AddSingleton<IWebhookUrlValidator, WebhookUrlValidator>();
 builder.Services.AddScoped<INotificationsRepository, NotificationsRepository>();
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<NotificationWorker>();

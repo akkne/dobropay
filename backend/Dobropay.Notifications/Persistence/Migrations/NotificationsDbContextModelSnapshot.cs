@@ -165,6 +165,10 @@ namespace Dobropay.Notifications.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("EventTypes")
+                        .HasColumnType("text")
+                        .HasColumnName("event_types");
+
                     b.Property<Guid>("ShopId")
                         .HasColumnType("uuid")
                         .HasColumnName("shop_id");

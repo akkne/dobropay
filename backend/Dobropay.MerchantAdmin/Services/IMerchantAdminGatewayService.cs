@@ -17,4 +17,10 @@ public interface IMerchantAdminGatewayService
         string resourcePath,
         Stream requestBody,
         CancellationToken cancellationToken);
+
+    Task<IResult> RetryDeliveryAsync(
+        string? authorizationHeader,
+        Guid shopId,
+        Guid deliveryId,
+        CancellationToken cancellationToken);
 }

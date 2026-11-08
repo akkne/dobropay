@@ -37,6 +37,20 @@ public sealed class MerchantAdminGatewayService(
             statusCode: (int)downstreamResponse.StatusCode);
     }
 
+    public Task<IResult> RetryDeliveryAsync(
+        string? authorizationHeader,
+        Guid shopId,
+        Guid deliveryId,
+        CancellationToken cancellationToken) =>
+        ForwardShopCommandAsync(
+            authorizationHeader,
+            null,
+            shopId,
+            options.NotificationsBaseUrl,
+            $"{InternalRouteNames.DeliveriesSuffix}/{deliveryId}/{InternalRouteNames.RetrySuffix}",
+            Stream.Null,
+            cancellationToken);
+
     public async Task<IResult> ForwardShopCommandAsync(
         string? authorizationHeader,
         string? idempotencyKey,

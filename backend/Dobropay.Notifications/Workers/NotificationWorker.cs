@@ -61,7 +61,8 @@ public sealed class NotificationWorker(
                 KafkaContracts.PaymentSucceededType or
                 KafkaContracts.PaymentCanceledType or
                 KafkaContracts.RefundSucceededType or
-                KafkaContracts.RefundCanceledType))
+                KafkaContracts.RefundCanceledType or
+                KafkaContracts.ReceiptSucceededType))
         {
             throw new JsonException("Unsupported payment event");
         }
