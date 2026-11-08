@@ -8,8 +8,7 @@ export interface PaymentMethodBadgeProps {
 export const PaymentMethodBadge: React.FC<PaymentMethodBadgeProps> = ({ method }) => {
   const config = {
     sbp: { label: 'СБП', color: 'bg-dp-pink/20 text-dp-blue border-dp-pink/40' },
-    bank_card: { label: 'Карта', color: 'bg-dp-blue/10 text-dp-blue border-dp-blue/20' },
-    crypto: { label: 'Крипто', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' }
+    bank_card: { label: 'Карта', color: 'bg-dp-blue/10 text-dp-blue border-dp-blue/20' }
   }[method] || { label: method, color: 'bg-dp-tint text-dp-blue border-dp-line' };
 
   return (

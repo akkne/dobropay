@@ -11,7 +11,6 @@ export const MethodTabs: React.FC<MethodTabsProps> = ({ activeMethod, onChange }
   const tabs: Array<{ type: PaymentMethodType; label: string; badge?: string }> = [
     { type: 'sbp', label: 'СБП', badge: '0% комиссия' },
     { type: 'bank_card', label: 'Банковская карта' },
-    { type: 'crypto', label: 'Криптовалюта' },
   ];
 
   return (

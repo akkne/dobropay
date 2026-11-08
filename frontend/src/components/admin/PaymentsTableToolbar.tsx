@@ -57,7 +57,6 @@ export const PaymentsTableToolbar: React.FC<PaymentsTableToolbarProps> = ({
           <option value="all">Все методы</option>
           <option value="sbp">СБП</option>
           <option value="bank_card">Карта</option>
-          <option value="crypto">Крипто</option>
         </select>
       </div>
 

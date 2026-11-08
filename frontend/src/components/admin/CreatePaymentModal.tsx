@@ -85,7 +85,6 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
           >
             <option value="sbp">Система быстрых платежей (СБП)</option>
             <option value="bank_card">Банковская карта (МИР / Visa / MC)</option>
-            <option value="crypto">Криптовалюта (USDT / TON / BTC)</option>
           </select>
         </div>
 

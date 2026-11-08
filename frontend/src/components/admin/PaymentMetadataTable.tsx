@@ -21,8 +21,8 @@ export const PaymentMetadataTable: React.FC<PaymentMetadataTableProps> = ({ paym
           <span className="font-mono text-right select-all">{payment.shopId}</span>
         </div>
         <div className="flex justify-between items-center py-1 border-b border-dp-line/50">
-          <span className="text-dp-blue/60">Двухстадийный (Холд)</span>
-          <span className="font-medium text-right">{payment.capture ? 'Да (Авторизация)' : 'Нет (Мгновенный)'}</span>
+          <span className="text-dp-blue/60">Тип списания</span>
+          <span className="font-medium text-right">{payment.capture ? 'Мгновенное (одностадийный)' : 'Холдирование (двухстадийный)'}</span>
         </div>
         {payment.checkoutUrl && (
           <div className="flex justify-between items-center py-1">

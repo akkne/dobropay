@@ -1,13 +1,16 @@
 export function detectCardBrand(cardNumber: string): { brand: 'mir' | 'visa' | 'mastercard' | 'generic'; name: string } {
   const clean = cardNumber.replace(/\D/g, '');
-  if (/^2/.test(clean)) {
+  if (/^220[0-4]/.test(clean)) {
     return { brand: 'mir', name: 'МИР' };
+  }
+  if (/^(5[1-5]|2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720))/.test(clean)) {
+    return { brand: 'mastercard', name: 'Mastercard' };
   }
   if (/^4/.test(clean)) {
     return { brand: 'visa', name: 'Visa' };
   }
-  if (/^(5[1-5]|2[2-7])/.test(clean)) {
-    return { brand: 'mastercard', name: 'Mastercard' };
+  if (/^2/.test(clean)) {
+    return { brand: 'mir', name: 'МИР' };
   }
   return { brand: 'generic', name: 'Банковская карта' };
 }

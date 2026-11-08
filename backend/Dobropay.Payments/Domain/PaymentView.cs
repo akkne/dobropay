@@ -17,4 +17,6 @@ public sealed record PaymentView(
     string ConfirmationType = ConfirmationTypes.Redirect,
     string? ConfirmationData = null,
     bool SavePaymentMethod = false,
-    Guid? SavedPaymentMethodId = null);
+    Guid? SavedPaymentMethodId = null,
+    DateTimeOffset CreatedAt = default,
+    DateTimeOffset UpdatedAt = default);

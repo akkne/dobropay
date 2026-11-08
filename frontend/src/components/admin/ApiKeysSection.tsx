@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 
 export interface ApiKeysSectionProps {
   apiKeys: ApiKey[];
-  onCreateKey: (name: string) => void;
+  onCreateKey: (name: string, mode?: 'test' | 'live') => void;
   onRevokeKey: (keyId: string) => void;
 }
 
@@ -35,8 +35,8 @@ export const ApiKeysSection: React.FC<ApiKeysSectionProps> = ({
 
       {isCreating && (
         <CreateApiKeyForm
-          onCreate={(name) => {
-            onCreateKey(name);
+          onCreate={(name, mode) => {
+            onCreateKey(name, mode);
             setIsCreating(false);
           }}
           onCancel={() => setIsCreating(false)}
@@ -48,9 +48,9 @@ export const ApiKeysSection: React.FC<ApiKeysSectionProps> = ({
           <ApiKeyRow key={key.id} apiKey={key} onRevoke={onRevokeKey} />
         ))}
         {apiKeys.length === 0 && !isCreating && (
-          <p className="text-xs text-dp-blue/50 text-center py-6">
-            Нет активных ключей. Создайте первый ключ для интеграции по API.
-          </p>
+          <div className="text-center py-8 text-xs text-dp-blue/50">
+            У вас пока нет активных API-ключей. Выпустите первый ключ для интеграции.
+          </div>
         )}
       </div>
     </div>

@@ -4,6 +4,7 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   maxWidth?: string;
+  title?: string;
   children: React.ReactNode;
 }
 
@@ -11,6 +12,7 @@ export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   maxWidth = '520px',
+  title,
   children
 }) => {
   useEffect(() => {
@@ -43,6 +45,9 @@ export const Modal: React.FC<ModalProps> = ({
         >
           &times;
         </button>
+        {title && (
+          <h3 className="text-sm font-bold text-dp-blue mb-4 pr-8">{title}</h3>
+        )}
         {children}
       </div>
     </div>

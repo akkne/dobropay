@@ -9,4 +9,5 @@ export interface Shop {
   bik?: string;
   website?: string;
   adminEmail?: string;
+  createdAt?: string;
 }

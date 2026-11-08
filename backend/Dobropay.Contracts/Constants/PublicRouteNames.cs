@@ -25,8 +25,12 @@ public static class PublicRouteNames
     public const string RefundsOpenApiPrefix = "v1/refunds";
     public const string CheckoutPrefix = "/checkout/";
     public const string CheckoutByToken = "/checkout/{token}";
+    public const string CheckoutSession = "/checkout/{token}/session";
     public const string CheckoutStart = "/checkout/{token}/start";
     public const string CheckoutSimulate = "/checkout/{token}/simulate/{outcome}";
+    public const string V1CheckoutByToken = "/v1/checkout/{token}";
+    public const string V1CheckoutStart = "/v1/checkout/{token}/start";
+    public const string V1CheckoutSimulate = "/v1/checkout/{token}/simulate/{outcome}";
     public const string ProviderSandboxEvents = "/v1/provider/sandbox/events";
     public const string ProviderSbpEvents = "/v1/provider/sbp/events";
     public const string ProviderCard3dsCallback = "/v1/provider/card/3ds-callback";

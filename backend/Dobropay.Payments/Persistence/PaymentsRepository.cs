@@ -49,7 +49,9 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
                 x.ConfirmationType,
                 x.ConfirmationData,
                 x.SavePaymentMethod,
-                x.SavedPaymentMethodId))
+                x.SavedPaymentMethodId,
+                x.CreatedAt,
+                x.UpdatedAt))
             .ToListAsync(cancellationToken);
 
     public Task<CheckoutLink?> FindCheckoutLinkAsync(string tokenHash, CancellationToken cancellationToken) =>

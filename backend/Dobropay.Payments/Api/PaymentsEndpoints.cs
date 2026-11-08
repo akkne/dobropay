@@ -273,12 +273,13 @@ public static class PaymentsEndpoints
 
         app.MapGet(InternalRouteNames.ShopPaymentReceiptContext, HandleReceiptContextAsync);
 
-        app.MapGet(PublicRouteNames.CheckoutByToken, async (
+        async Task<IResult> HandleGetCheckoutSessionAsync(
             string token,
+            HttpContext context,
             IPaymentsRepository repository,
             IDeveloperApiClient developerApiClient,
             IHashProvider hashProvider,
-            CancellationToken ct) =>
+            CancellationToken ct)
         {
             var link = await ResolveCheckoutLinkAsync(token, repository, hashProvider, ct);
             if (link is null)
@@ -300,6 +301,32 @@ public static class PaymentsEndpoints
             var shop = await developerApiClient.GetShopAsync(link.ShopId, ct);
             var attempt = await repository.FindAttemptByPaymentAsync(link.ShopId, payment.Id, ct);
 
+            var acceptHeader = context.Request.Headers.Accept.ToString();
+            var wantsJson = acceptHeader.Contains("application/json") ||
+                            context.Request.Path.Value?.EndsWith("/session") == true ||
+                            context.Request.Path.Value?.StartsWith("/v1/checkout") == true;
+
+            if (wantsJson)
+            {
+                var sessionDto = new CheckoutSessionDto(
+                    Token: token,
+                    PaymentId: payment.Id.ToString("N"),
+                    ShopId: link.ShopId.ToString("N"),
+                    ShopName: shop?.Name ?? "Магазин",
+                    OrderId: payment.ExternalOrderId ?? payment.Id.ToString("N"),
+                    Amount: payment.Amount / 100m,
+                    Currency: payment.Currency,
+                    Status: payment.Status,
+                    PaymentMethodType: payment.PaymentMethodType,
+                    Capture: payment.Capture,
+                    ExpiresAt: link.ExpiresAt,
+                    CreatedAt: payment.CreatedAt,
+                    Description: $"Оплата заказа {payment.ExternalOrderId ?? payment.Id.ToString("N")}",
+                    ConfirmationUrl: attempt?.ConfirmationPayload ?? $"{PublicRouteNames.CheckoutPrefix}{token}/simulator?method={payment.PaymentMethodType}");
+
+                return Results.Ok(sessionDto);
+            }
+
             var actions = payment.Status != PaymentRules.Pending
                 ? string.Empty
                 : attempt is null
@@ -309,18 +336,22 @@ public static class PaymentsEndpoints
             return Results.Content(
                 $"<!doctype html><html lang='ru'><meta charset='utf-8'><title>Dobropay</title><main><h1>{HtmlEncoder.Default.Encode(shop?.Name ?? "Магазин")}</h1><p>К оплате: {payment.Amount / 100m:0.00} ₽</p><p>Статус: {payment.Status}</p>{actions}</main></html>",
                 DomainConstants.TextHtmlUtf8ContentType);
-        });
+        }
 
-        app.MapPost(PublicRouteNames.CheckoutStart, async (
+        app.MapGet(PublicRouteNames.CheckoutByToken, HandleGetCheckoutSessionAsync);
+        app.MapGet(PublicRouteNames.CheckoutSession, HandleGetCheckoutSessionAsync);
+        app.MapGet(PublicRouteNames.V1CheckoutByToken, HandleGetCheckoutSessionAsync);
+
+        async Task<IResult> HandleCheckoutStartAsync(
             string token,
+            HttpContext context,
             IPaymentsRepository repository,
             IUnitOfWork unitOfWork,
             IPaymentProviderRouter providerRouter,
             SbpPaymentProvider sbpProvider,
             BankCardPaymentProvider cardProvider,
-            CryptoPaymentProvider cryptoProvider,
             IHashProvider hashProvider,
-            CancellationToken ct) =>
+            CancellationToken ct)
         {
             var link = await ResolveCheckoutLinkAsync(token, repository, hashProvider, ct);
             if (link is null)
@@ -339,9 +370,23 @@ public static class PaymentsEndpoints
                 return Results.NotFound();
             }
 
+            var body = await ReadOptionalBodyAsync<CheckoutStartRequest>(context.Request, ct);
+            if (!string.IsNullOrWhiteSpace(body?.Method))
+            {
+                if (body.Method == PaymentMethodTypes.Sbp || body.Method == PaymentMethodTypes.BankCard)
+                {
+                    payment.PaymentMethodType = body.Method;
+                }
+            }
+
             if (payment.Status != PaymentRules.Pending)
             {
-                return Results.Redirect($"{PublicRouteNames.CheckoutPrefix}{token}");
+                var redirectOnFinished = $"{PublicRouteNames.CheckoutPrefix}{token}";
+                if (context.Request.Headers.Accept.ToString().Contains("application/json"))
+                {
+                    return Results.Ok(new { status = payment.Status, confirmationUrl = redirectOnFinished });
+                }
+                return Results.Redirect(redirectOnFinished);
             }
 
             var provider = providerRouter.Resolve(payment.PaymentMethodType);
@@ -358,35 +403,13 @@ public static class PaymentsEndpoints
                 };
                 await repository.AddAttemptAsync(attempt, ct);
             }
+            else
+            {
+                attempt.PaymentMethodType = payment.PaymentMethodType;
+            }
 
-            if (payment.PaymentMethodType == PaymentMethodTypes.Sbp && attempt.SbpQrcId is null)
-            {
-                var qr = sbpProvider.GenerateQrPayload(attempt.Id, payment.Amount, payment.Currency, link.ExpiresAt);
-                attempt.SbpQrcId = qr.QrcId;
-                attempt.ConfirmationPayload = qr.PayloadUrl;
-            }
-            else if (payment.PaymentMethodType == PaymentMethodTypes.BankCard && attempt.ConfirmationPayload is null)
-            {
-                var challenge = cardProvider.Create3dsChallenge(attempt.Id, token);
-                attempt.ConfirmationPayload = challenge.ChallengeUrl;
-            }
-            else if (payment.PaymentMethodType == PaymentMethodTypes.Crypto && attempt.DepositAddress is null)
-            {
-                var quote = cryptoProvider.CreateQuote(
-                    attempt.Id,
-                    payment.Amount,
-                    attempt.CryptoNetwork ?? CryptoNetworks.UsdtTrc20,
-                    DateTimeOffset.UtcNow);
-                attempt.CryptoCurrency = quote.CryptoCurrency;
-                attempt.CryptoNetwork = quote.Network;
-                attempt.ExchangeRate = quote.ExchangeRate;
-                attempt.CryptoAmount = quote.CryptoAmount;
-                attempt.DepositAddress = quote.DepositAddress;
-                attempt.QuoteExpiresAt = quote.QuoteExpiresAt;
-                attempt.RequiredConfirmations = quote.RequiredConfirmations;
-                attempt.Confirmations ??= 0;
-                attempt.ConfirmationPayload = quote.DepositAddress;
-            }
+            var simulatorUrl = $"{PublicRouteNames.CheckoutPrefix}{token}/simulator?method={payment.PaymentMethodType}";
+            attempt.ConfirmationPayload = simulatorUrl;
 
             await unitOfWork.SaveChangesAsync(ct);
 
@@ -400,20 +423,31 @@ public static class PaymentsEndpoints
                 app.Logger.LogWarning(exception, "Provider outcome unknown attempt {AttemptId}", attempt.Id);
             }
 
-            return Results.Redirect($"{PublicRouteNames.CheckoutPrefix}{token}");
-        });
+            if (context.Request.Headers.Accept.ToString().Contains("application/json") ||
+                context.Request.ContentType?.Contains("application/json") == true)
+            {
+                return Results.Ok(new { status = payment.Status, confirmationUrl = simulatorUrl });
+            }
+
+            return Results.Redirect(simulatorUrl);
+        }
+
+        app.MapPost(PublicRouteNames.CheckoutStart, HandleCheckoutStartAsync);
+        app.MapPost(PublicRouteNames.V1CheckoutStart, HandleCheckoutStartAsync);
 
         if (options.SandboxEnabled)
         {
-            app.MapPost(PublicRouteNames.CheckoutSimulate, async (
+            async Task<IResult> HandleCheckoutSimulateAsync(
                 string token,
                 string outcome,
+                HttpContext context,
                 IPaymentsRepository repository,
                 IHashProvider hashProvider,
                 IHttpClientFactory httpClientFactory,
-                CancellationToken ct) =>
+                CancellationToken ct)
             {
-                if (outcome is not (PaymentRules.Succeeded or PaymentRules.Canceled))
+                var effectiveOutcome = outcome == PaymentRules.WaitingForCapture ? PaymentRules.Succeeded : outcome;
+                if (effectiveOutcome is not (PaymentRules.Succeeded or PaymentRules.Canceled))
                 {
                     return Results.BadRequest();
                 }
@@ -443,7 +477,7 @@ public static class PaymentsEndpoints
                     attempt.ExternalId,
                     payment.Amount,
                     payment.Currency,
-                    outcome);
+                    effectiveOutcome);
                 var payloadBytes = JsonSerializer.SerializeToUtf8Bytes(incoming, JsonSerializerOptions.Web);
 
                 using var request = new HttpRequestMessage(
@@ -458,10 +492,22 @@ public static class PaymentsEndpoints
                 request.Content.Headers.ContentType = new(DomainConstants.ApplicationJsonContentType);
 
                 using var response = await httpClientFactory.CreateClient().SendAsync(request, ct);
-                return response.IsSuccessStatusCode
-                    ? Results.Redirect($"{PublicRouteNames.CheckoutPrefix}{token}")
-                    : Results.StatusCode(StatusCodes.Status502BadGateway);
-            });
+                if (!response.IsSuccessStatusCode)
+                {
+                    return Results.StatusCode(StatusCodes.Status502BadGateway);
+                }
+
+                if (context.Request.Headers.Accept.ToString().Contains("application/json"))
+                {
+                    var updatedPayment = await repository.FindPaymentByIdAsync(link.ShopId, link.PaymentId, ct);
+                    return Results.Ok(new { status = updatedPayment?.Status ?? effectiveOutcome });
+                }
+
+                return Results.Redirect($"{PublicRouteNames.CheckoutPrefix}{token}");
+            }
+
+            app.MapPost(PublicRouteNames.CheckoutSimulate, HandleCheckoutSimulateAsync);
+            app.MapPost(PublicRouteNames.V1CheckoutSimulate, HandleCheckoutSimulateAsync);
 
             app.MapPost(PublicRouteNames.ProviderSandboxEvents, async (
                 HttpContext http,
@@ -600,7 +646,9 @@ public static class PaymentsEndpoints
             payment.ConfirmationType,
             payment.ConfirmationData,
             payment.SavePaymentMethod,
-            payment.SavedPaymentMethodId);
+            payment.SavedPaymentMethodId,
+            payment.CreatedAt,
+            payment.UpdatedAt);
 
     private static string? ResolveInternalIdempotencyKey(HttpRequest request)
     {
