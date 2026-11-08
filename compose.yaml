@@ -276,6 +276,11 @@ services:
       ConnectionStrings__Runtime: Host=receipts-db;Database=${RECEIPTS_DB_NAME};Username=${RECEIPTS_DB_USER};Password=${RECEIPTS_DB_PASSWORD}
       Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
       Services__Email: ${EMAIL_SERVICE_URL}
+      Services__Payments: ${PAYMENTS_SERVICE_URL}
+      Fiscal__ProviderMode: ${FISCAL_PROVIDER_MODE:-sandbox}
+      Fiscal__CloudKktBaseUrl: ${FISCAL_CLOUD_KKT_BASE_URL:-}
+      Fiscal__CloudKktApiKey: ${FISCAL_CLOUD_KKT_API_KEY:-}
+      Fiscal__OfdBaseUrl: ${FISCAL_OFD_BASE_URL:-}
       Demo__ReceiptEmail: ${DEMO_RECEIPT_EMAIL}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
 

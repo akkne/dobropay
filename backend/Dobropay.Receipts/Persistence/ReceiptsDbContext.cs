@@ -6,6 +6,8 @@ public sealed class ReceiptsDbContext(DbContextOptions<ReceiptsDbContext> option
 {
     public DbSet<ReceiptInbox> ReceiptInbox => Set<ReceiptInbox>();
     public DbSet<DemoReceipt> DemoReceipts => Set<DemoReceipt>();
+    public DbSet<FiscalReceipt> FiscalReceipts => Set<FiscalReceipt>();
+    public DbSet<FiscalReceiptItem> FiscalReceiptItems => Set<FiscalReceiptItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +21,9 @@ public sealed class ReceiptsDbContext(DbContextOptions<ReceiptsDbContext> option
             entity.HasIndex(x => x.EventId).IsUnique();
             entity.HasIndex(x => new { x.ShopId, x.PaymentId });
         });
+
+        modelBuilder.ApplyConfiguration(new FiscalReceiptConfiguration());
+        modelBuilder.ApplyConfiguration(new FiscalReceiptItemConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

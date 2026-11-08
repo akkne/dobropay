@@ -20,6 +20,9 @@
     handle /v1/provider/* {
         reverse_proxy payments:8080
     }
+    handle /v1/receipts* {
+        reverse_proxy receipts:8080
+    }
     handle /local/webhooks/received {
         reverse_proxy notifications:8080
     }
