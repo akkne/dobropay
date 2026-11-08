@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CheckoutHeader } from '../../../components/checkout/CheckoutHeader';
 import { OrderSummary } from '../../../components/checkout/OrderSummary';
 import { MethodTabs } from '../../../components/checkout/MethodTabs';
 import { SbpMethodPanel } from '../../../components/checkout/SbpMethodPanel';
 import { BankCardMethodPanel } from '../../../components/checkout/BankCardMethodPanel';
-import { CryptoMethodPanel } from '../../../components/checkout/CryptoMethodPanel';
-import { ThreeDsModal } from '../../../components/checkout/ThreeDsModal';
 import { OutcomeScreen } from '../../../components/checkout/OutcomeScreen';
 import { SandboxSimulatorBar } from '../../../components/checkout/SandboxSimulatorBar';
 import { CheckoutLoadingSkeleton } from '../../../components/checkout/CheckoutLoadingSkeleton';
@@ -23,6 +21,7 @@ import { PaymentStatus } from '../../../types/PaymentStatus';
 function CheckoutContent() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const tokenParam = (params?.token as string) || searchParams.get('token') || 'demo-checkout-token-2026';
   const queryTab = searchParams.get('tab') as PaymentMethodType | null;
@@ -35,7 +34,6 @@ function CheckoutContent() {
   const [activeMethod, setActiveMethod] = useState<PaymentMethodType>(queryTab || 'sbp');
   const [status, setStatus] = useState<PaymentStatus>(queryStatus || 'pending');
   const [remainingSeconds, setRemainingSeconds] = useState<number>(30 * 60);
-  const [is3DsOpen, setIs3DsOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -91,24 +89,24 @@ function CheckoutContent() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleCardSubmit = () => {
-    setIs3DsOpen(true);
-  };
-
-  const handle3DsSuccess = async () => {
-    setIs3DsOpen(false);
+  const handleCardSubmit = async (cardData: { number: string; expiry: string; cvv: string; saveCard: boolean }) => {
     try {
-      const res = await apiClient.startCheckoutSession(tokenParam, 'bank_card');
-      setStatus(res.status);
-      showToast('Оплата успешно подтверждена через 3-D Secure!');
+      const res = await apiClient.startCheckoutSession(tokenParam, 'bank_card', cardData);
+      const targetUrl = res.confirmationUrl || `/checkout/${tokenParam}/simulator?method=bank_card`;
+      router.push(targetUrl);
     } catch {
-      setStatus('succeeded');
+      router.push(`/checkout/${tokenParam}/simulator?method=bank_card`);
     }
   };
 
-  const handle3DsCancel = () => {
-    setIs3DsOpen(false);
-    showToast('Подтверждение операции отменено.');
+  const handleSbpPay = async () => {
+    try {
+      const res = await apiClient.startCheckoutSession(tokenParam, 'sbp');
+      const targetUrl = res.confirmationUrl || `/checkout/${tokenParam}/simulator?method=sbp`;
+      router.push(targetUrl);
+    } catch {
+      router.push(`/checkout/${tokenParam}/simulator?method=sbp`);
+    }
   };
 
   const handleSimulate = async (simulatedStatus: PaymentStatus) => {
@@ -121,15 +119,6 @@ function CheckoutContent() {
     setStatus('pending');
     setRemainingSeconds(30 * 60);
     showToast('Состояние сессии оплаты сброшено');
-  };
-
-  const getMethodName = (method: PaymentMethodType) => {
-    switch (method) {
-      case 'sbp': return 'Система быстрых платежей (СБП)';
-      case 'bank_card': return 'Банковская карта (МИР / Visa / MC)';
-      case 'crypto': return 'Криптовалюта';
-      default: return 'Электронный платеж';
-    }
   };
 
   if (isLoading) {
@@ -167,11 +156,10 @@ function CheckoutContent() {
             <div className="space-y-5">
               <MethodTabs activeMethod={activeMethod} onChange={setActiveMethod} />
 
-              {activeMethod === 'sbp' && <SbpMethodPanel />}
+              {activeMethod === 'sbp' && <SbpMethodPanel onPay={handleSbpPay} />}
               {activeMethod === 'bank_card' && (
                 <BankCardMethodPanel amount={session.amount} onSubmit={handleCardSubmit} />
               )}
-              {activeMethod === 'crypto' && <CryptoMethodPanel amount={session.amount} />}
             </div>
           ) : (
             <OutcomeScreen
@@ -183,31 +171,34 @@ function CheckoutContent() {
                 setRemainingSeconds(30 * 60);
               }}
               onReturnToShop={() => {
-                window.location.href = '/';
+                showToast('Перенаправление в магазин...');
               }}
             />
           )}
         </main>
       </div>
 
-      <ThreeDsModal
-        isOpen={is3DsOpen}
-        onSuccess={handle3DsSuccess}
-        onCancel={handle3DsCancel}
+      <SandboxSimulatorBar
+        onSimulate={handleSimulate}
+        onReset={handleReset}
       />
 
-      <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} maxWidth="420px">
+      <Modal
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        title="Электронный фискальный чек"
+      >
         <Receipt
           orderNumber={session.orderId}
           amount={session.amount}
-          paymentMethodTitle={getMethodName(activeMethod)}
+          legalEntity={session.shopName}
+          createdAt={session.createdAt}
+          paymentMethodTitle={session.paymentMethodType === 'sbp' ? 'СБП' : 'Банковская карта'}
         />
       </Modal>
 
-      <SandboxSimulatorBar onSimulate={handleSimulate} onReset={handleReset} />
-
       {toastMessage && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-dp-blue text-white px-4 py-2 rounded-pill shadow-popover text-xs font-semibold animate-fade-in">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-dp-blue text-white px-4 py-2 rounded-pill text-xs shadow-lg font-medium animate-fadeIn z-50">
           {toastMessage}
         </div>
       )}
@@ -217,12 +208,14 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <React.Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
-        <CheckoutLoadingSkeleton />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
+          <CheckoutLoadingSkeleton />
+        </div>
+      }
+    >
       <CheckoutContent />
-    </React.Suspense>
+    </Suspense>
   );
 }

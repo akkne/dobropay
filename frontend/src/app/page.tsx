@@ -137,7 +137,7 @@ function AdminContent() {
       currency: 'RUB',
       status: 'pending',
       paymentMethodType: data.method,
-      capture: !data.capture,
+      capture: data.capture,
       checkoutUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -204,13 +204,13 @@ function AdminContent() {
           <div className="space-y-6">
             <ApiKeysSection
               apiKeys={apiKeys}
-              onCreateKey={async (name) => {
-                await apiClient.createApiKey('shop-1', name);
+              onCreateKey={async (name, mode) => {
+                await apiClient.createApiKey('shop-1', name, mode);
                 await loadData();
                 showToast(`Ключ "${name}" успешно создан!`);
               }}
               onRevokeKey={async (id) => {
-                await apiClient.revokeApiKey(id);
+                await apiClient.revokeApiKey('shop-1', id);
                 await loadData();
                 showToast('API-ключ отозван');
               }}
