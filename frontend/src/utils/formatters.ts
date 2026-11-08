@@ -41,17 +41,3 @@ export function formatTimer(seconds: number): string {
   const s = seconds % 60;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
-
-export function calculateCryptoAmount(amountKopecks: number, network: string): string {
-  const rubles = amountKopecks / 100;
-  switch (network) {
-    case 'usdt':
-      return (rubles / 94.5).toFixed(2);
-    case 'ton':
-      return (rubles / 510.0).toFixed(4);
-    case 'btc':
-      return (rubles / 6250000.0).toFixed(6);
-    default:
-      return (rubles / 94.5).toFixed(2);
-  }
-}

@@ -1,1 +1,1 @@
-export type PaymentMethodType = 'sbp' | 'bank_card' | 'crypto';
+export type PaymentMethodType = 'sbp' | 'bank_card';

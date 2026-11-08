@@ -21,10 +21,5 @@ export interface Payment {
   cancellationReason?: string;
   cardLast4?: string;
   cardBrand?: string;
-  cryptoNetwork?: string;
-  cryptoAmount?: number;
-  depositAddress?: string;
-  confirmations?: number;
-  requiredConfirmations?: number;
   refunds: Refund[];
 }
