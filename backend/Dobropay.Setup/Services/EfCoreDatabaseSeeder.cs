@@ -110,7 +110,11 @@ public sealed class EfCoreDatabaseSeeder(
                     {
                         Id = shopSpec.CredentialId,
                         ShopId = shopSpec.ShopId,
-                        KeyHash = keyHash
+                        KeyHash = keyHash,
+                        Name = "Default Key",
+                        Mode = DomainConstants.ApiKeyModeTest,
+                        KeyPrefix = shopSpec.RawApiKey[..Math.Min(12, shopSpec.RawApiKey.Length)],
+                        CreatedAt = DateTimeOffset.UtcNow
                     },
                     cancellationToken);
             }
@@ -118,6 +122,27 @@ public sealed class EfCoreDatabaseSeeder(
             {
                 credential.ShopId = shopSpec.ShopId;
                 credential.KeyHash = keyHash;
+            }
+
+            var profile = await dbContext.ShopOnboardingProfiles
+                .SingleOrDefaultAsync(x => x.ShopId == shopSpec.ShopId, cancellationToken);
+            if (profile is null)
+            {
+                await dbContext.ShopOnboardingProfiles.AddAsync(
+                    new ShopOnboardingProfile
+                    {
+                        ShopId = shopSpec.ShopId,
+                        Inn = "7701234567",
+                        Ogrn = "1027700123456",
+                        LegalName = $"{shopSpec.ShopName} LLC",
+                        BankBic = "044525225",
+                        BankAccount = "40702810400000000001",
+                        WebsiteUrl = "https://example.com",
+                        VerificationStatus = VerificationStatuses.Approved,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    },
+                    cancellationToken);
             }
 
             var membershipExists = await dbContext.ShopMemberships

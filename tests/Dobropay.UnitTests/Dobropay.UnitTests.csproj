@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\backend\Dobropay.Auth\Dobropay.Auth.csproj" />
     <ProjectReference Include="..\..\backend\Dobropay.Contracts\Dobropay.Contracts.csproj" />
+    <ProjectReference Include="..\..\backend\Dobropay.DeveloperApi\Dobropay.DeveloperApi.csproj" />
     <ProjectReference Include="..\..\backend\Dobropay.Payments\Dobropay.Payments.csproj" />
     <ProjectReference Include="..\..\backend\Dobropay.Receipts\Dobropay.Receipts.csproj" />
   </ItemGroup>

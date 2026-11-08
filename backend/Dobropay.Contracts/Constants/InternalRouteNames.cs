@@ -6,6 +6,7 @@ public static class InternalRouteNames
     public const string ResolveApiKey = "/internal/v1/keys/resolve";
     public const string ShopById = "/internal/v1/shops/{shopId:guid}";
     public const string ShopByIdPrefix = "/internal/v1/shops/";
+    public const string ShopOnboardingApprove = "/internal/v1/shops/{shopId:guid}/onboarding/approve";
     public const string MembershipByAccountAndShop = "/internal/v1/memberships/{accountId:guid}/{shopId:guid}";
     public const string MembershipPrefix = "/internal/v1/memberships/";
     public const string ShopPayments = "/internal/v1/shops/{shopId:guid}/payments";

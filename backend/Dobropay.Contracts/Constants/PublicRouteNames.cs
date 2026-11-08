@@ -7,6 +7,11 @@ public static class PublicRouteNames
     public const string AuthRefresh = "/v1/auth/refresh";
     public const string AuthLogout = "/v1/auth/logout";
     public const string AuthMe = "/v1/auth/me";
+    public const string DeveloperShops = "/v1/developer/shops";
+    public const string DeveloperShopOnboarding = "/v1/developer/shops/{shopId:guid}/onboarding";
+    public const string DeveloperShopOnboardingSubmit = "/v1/developer/shops/{shopId:guid}/onboarding/submit";
+    public const string DeveloperShopKeys = "/v1/developer/shops/{shopId:guid}/keys";
+    public const string DeveloperShopKeyDelete = "/v1/developer/shops/{shopId:guid}/keys/{keyId:guid}";
     public const string DeveloperCreateShopKey = "/v1/developer/shops/{shopId:guid}/keys";
     public const string DeveloperConfigureWebhook = "/v1/developer/shops/{shopId:guid}/webhooks";
     public const string Payments = "/v1/payments";

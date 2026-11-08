@@ -2,6 +2,9 @@
     handle /v1/auth/* {
         reverse_proxy auth:8080
     }
+    handle /v1/developer/* {
+        reverse_proxy developer-api:8080
+    }
     handle /v1/admin/* {
         reverse_proxy merchant-admin:8080
     }

@@ -186,9 +186,12 @@ services:
     depends_on:
       setup:
         condition: service_completed_successfully
+      auth:
+        condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Runtime: Host=merchant-dev-db;Database=${MERCHANT_DEV_DB_NAME};Username=${MERCHANT_DEV_DB_USER};Password=${MERCHANT_DEV_DB_PASSWORD}
+      Services__Auth: ${AUTH_SERVICE_URL}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
 
   payments:
@@ -314,6 +317,8 @@ services:
     image: caddy:2.10.2-alpine
     depends_on:
       auth:
+        condition: service_started
+      developer-api:
         condition: service_started
       payments:
         condition: service_started
