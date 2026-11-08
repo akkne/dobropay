@@ -100,14 +100,14 @@ flowchart LR
 - [x] **Задача 3.1.1 — Хранение фискального запроса в `payments-db`**:
   - Принимать в `POST /v1/payments` и `POST /v1/refunds` опциональный объект `receipt` (`customer`, `items`, `tax_system_code`).
   - Сохранять его в сущности `PaymentReceiptPayload` в `payments-db` и отдавать только по внутреннему авторизованному маршруту `GET /internal/v1/shops/{shopId:guid}/payments/{paymentId:guid}/receipt-context` (чтобы PII покупателя не попадали в Kafka).
-- **Задача 3.1.2 — Расширение схемы `receipts-db` до стандарта 54-ФЗ**:
+- [x] **Задача 3.1.2 — Расширение схемы `receipts-db` до стандарта 54-ФЗ**:
   - Создать сущности `FiscalReceipt` (`Id`, `ShopId`, `PaymentId`, `RefundId`, `ReceiptType` [`payment` / `refund`], `Status`, `TaxSystemCode`, `CustomerEmail`, `CustomerPhone`, `FiscalDocumentNumber`, `FiscalStorageNumber`, `FiscalAttribute`, `RegisteredAt`) и `FiscalReceiptItem` (`Id`, `ReceiptId`, `Description`, `Quantity`, `Amount`, `VatCode`, `PaymentMode`, `PaymentSubject`).
 
 ### Эпик 3.2. Адаптер облачной ККТ и публичный API поиска чеков
-- **Задача 3.2.1 — Абстракция `IFiscalProvider`**:
+- [x] **Задача 3.2.1 — Абстракция `IFiscalProvider`**:
   - Спроектировать `IFiscalProvider` и реализации (`SandboxFiscalProvider` для локального контура + HTTP-адаптер облачной ККТ).
   - Обновить `ReceiptEventWorker`: при получении `payment.succeeded` или `refund.succeeded` запрашивать контекст чека у `Payments`, регистрировать чек через `IFiscalProvider` и отправлять письмо через `Dobropay.Email`.
-- **Задача 3.2.2 — Публичный поиск чека для страницы «Чеки» (`#receipts`)**:
+- [x] **Задача 3.2.2 — Публичный поиск чека для страницы «Чеки» (`#receipts`)**:
   - Реализовать в `Dobropay.Receipts` публичный эндпоинт `GET /v1/receipts/lookup` (по номеру заказа/квитанции или `paymentId`) и проксировать его в `infra/Caddyfile`.
 
 ---
