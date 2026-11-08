@@ -1,3 +1,5 @@
+using Dobropay.Contracts.Receipts;
+
 namespace Dobropay.Payments.Domain;
 
 public sealed record CreatePaymentRequest(
@@ -10,4 +12,5 @@ public sealed record CreatePaymentRequest(
     bool SavePaymentMethod = false,
     Guid? PaymentMethodId = null,
     PaymentCardData? Card = null,
-    string? CryptoNetwork = null);
+    string? CryptoNetwork = null,
+    ReceiptRequestDto? Receipt = null);

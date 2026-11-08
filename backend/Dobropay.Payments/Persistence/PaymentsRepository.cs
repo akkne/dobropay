@@ -210,5 +210,21 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
         CancellationToken cancellationToken) =>
         await dbContext.SavedPaymentMethods.AddAsync(method, cancellationToken);
 
+    public async Task AddReceiptPayloadAsync(
+        PaymentReceiptPayload payload,
+        CancellationToken cancellationToken) =>
+        await dbContext.PaymentReceiptPayloads.AddAsync(payload, cancellationToken);
+
+    public Task<PaymentReceiptPayload?> FindReceiptPayloadAsync(
+        Guid shopId,
+        Guid paymentId,
+        Guid? refundId,
+        CancellationToken cancellationToken) =>
+        dbContext.PaymentReceiptPayloads
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.ShopId == shopId && x.PaymentId == paymentId && x.RefundId == refundId,
+                cancellationToken);
+
     public void ClearTracking() => dbContext.ChangeTracker.Clear();
 }

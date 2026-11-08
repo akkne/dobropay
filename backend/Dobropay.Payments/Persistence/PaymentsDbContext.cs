@@ -13,6 +13,7 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
     public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
     public DbSet<Refund> Refunds => Set<Refund>();
     public DbSet<SavedPaymentMethod> SavedPaymentMethods => Set<SavedPaymentMethod>();
+    public DbSet<PaymentReceiptPayload> PaymentReceiptPayloads => Set<PaymentReceiptPayload>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +103,7 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
 
         modelBuilder.ApplyConfiguration(new RefundConfiguration());
         modelBuilder.ApplyConfiguration(new SavedPaymentMethodConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentReceiptPayloadConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

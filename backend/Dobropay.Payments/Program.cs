@@ -70,6 +70,7 @@ builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IPaymentCaptureService, PaymentCaptureService>();
 builder.Services.AddScoped<IRefundService, RefundService>();
 builder.Services.AddScoped<IPaymentReconciliationService, PaymentReconciliationService>();
+builder.Services.AddScoped<IPaymentReceiptContextService, PaymentReceiptContextService>();
 builder.Services.AddHttpClient<IDeveloperApiClient, DeveloperApiClient>();
 builder.Services.AddHostedService<PaymentEventWorker>();
 builder.Services.AddHostedService<PaymentReconciliationWorker>();

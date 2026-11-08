@@ -356,6 +356,63 @@ namespace Dobropay.Payments.Persistence.Migrations
                     b.ToTable("payment_attempts", (string)null);
                 });
 
+            modelBuilder.Entity("Dobropay.Payments.Persistence.PaymentReceiptPayload", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("CustomerEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("customer_email");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("customer_phone");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("items_json");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<string>("ReceiptType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("receipt_type");
+
+                    b.Property<Guid?>("RefundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("refund_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<int>("TaxSystemCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("tax_system_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId", "PaymentId", "RefundId");
+
+                    b.ToTable("payment_receipt_payloads", (string)null);
+                });
+
             modelBuilder.Entity("Dobropay.Payments.Persistence.ProviderInbox", b =>
                 {
                     b.Property<Guid>("Id")
@@ -555,6 +612,16 @@ namespace Dobropay.Payments.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Dobropay.Payments.Persistence.PaymentAttempt", b =>
+                {
+                    b.HasOne("Dobropay.Payments.Persistence.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "PaymentId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Dobropay.Payments.Persistence.PaymentReceiptPayload", b =>
                 {
                     b.HasOne("Dobropay.Payments.Persistence.Payment", null)
                         .WithMany()
