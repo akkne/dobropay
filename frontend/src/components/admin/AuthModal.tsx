@@ -3,7 +3,7 @@ import { Brand } from '../ui/Brand';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
-interface AuthModalProps {
+export interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (email: string, pass: string) => void;
@@ -24,58 +24,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="440px">
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
+      <div className="flex justify-center mb-3">
         <Brand size={26} />
       </div>
 
-      <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--blue)', textAlign: 'center', marginBottom: '6px' }}>
+      <h3 className="text-lg font-bold text-dp-blue text-center mb-1">
         Вход в личный кабинет
       </h3>
-      <p style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)', textAlign: 'center', marginBottom: '20px' }}>
+      <p className="text-xs text-dp-blue/60 text-center mb-5">
         Управляйте магазинами, платежами и интеграциями
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="auth-email">Email сотрудника</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-dp-blue" htmlFor="auth-email">
+            Email сотрудника
+          </label>
           <input
             type="email"
             id="auth-email"
-            className="form-input"
+            className="w-full px-3.5 py-2.5 text-xs rounded-card border border-dp-line bg-white focus:outline-none focus:border-dp-blue"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="auth-pass">Пароль</label>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-dp-blue" htmlFor="auth-password">
+            Пароль
+          </label>
           <input
             type="password"
-            id="auth-pass"
-            className="form-input"
+            id="auth-password"
+            className="w-full px-3.5 py-2.5 text-xs rounded-card border border-dp-line bg-white focus:outline-none focus:border-dp-blue"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-          <button
+        <div className="pt-2 space-y-2">
+          <Button type="submit" variant="primary-blue" size="md" full>
+            Войти в кабинет
+          </Button>
+
+          <Button
             type="button"
-            className="button ghost sm"
-            style={{ paddingLeft: 0, fontSize: '12px' }}
+            variant="outline"
+            size="sm"
+            full
             onClick={handleFillDemo}
           >
-            ⚡ Заполнить демо-данные
-          </button>
-          <span style={{ fontSize: '12px', color: 'rgba(9, 49, 141, 0.7)' }}>Забыли пароль?</span>
+            Подставить демо-данные
+          </Button>
         </div>
-
-        <Button type="submit" variant="primary" size="lg" full>
-          Войти в кабинет
-        </Button>
       </form>
     </Modal>
   );

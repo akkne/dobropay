@@ -1,71 +1,51 @@
 import React from 'react';
 import { FiscalReceipt } from '../../types/FiscalReceipt';
-import { formatMoney } from '../../utils/formatters';
-import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
+import { FiscalReceiptRow } from './FiscalReceiptRow';
 
-interface ReceiptsTableProps {
+export interface ReceiptsTableProps {
   receipts: FiscalReceipt[];
   onPreviewReceipt: (receipt: FiscalReceipt) => void;
 }
 
-export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({
-  receipts,
-  onPreviewReceipt
-}) => {
+export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onPreviewReceipt }) => {
   return (
-    <div className="section-card">
-      <div className="section-head">
-        <div>
-          <h2 className="section-title">Реестр фискальных чеков (54-ФЗ)</h2>
-          <p style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)', marginTop: '4px' }}>
-            Автоматическая передача данных в ФНС через облачные кассы и отправка квитанций покупателям
-          </p>
-        </div>
+    <div className="bg-white border border-dp-line rounded-card p-5 shadow-sm space-y-4">
+      <div className="pb-3 border-b border-dp-line">
+        <h3 className="text-sm font-bold text-dp-blue">Реестр фискальных чеков (54-ФЗ)</h3>
+        <p className="text-xs text-dp-blue/60">
+          Все чеки автоматически фискализируются через облачную кассу Добропей и регистрируются в ОФД / ФНС
+        </p>
       </div>
 
-      <div className="table-responsive">
-        <table className="data-table">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr>
-              <th>Номер заказа / ID</th>
-              <th>Реквизиты чека</th>
-              <th>Сумма</th>
-              <th>Email покупателя</th>
-              <th>Фискализация</th>
-              <th>Email статус</th>
-              <th>Действия</th>
+            <tr className="border-b border-dp-line text-dp-blue/60 font-semibold uppercase tracking-wider text-[10px]">
+              <th className="py-2.5 px-3">Номер чека / Заказ</th>
+              <th className="py-2.5 px-3">Сумма</th>
+              <th className="py-2.5 px-3">ФН</th>
+              <th className="py-2.5 px-3">ФД / ФПД</th>
+              <th className="py-2.5 px-3">Статус 54-ФЗ</th>
+              <th className="py-2.5 px-3">Дата регистрации</th>
+              <th className="py-2.5 px-3 text-right">Действие</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-dp-line/50">
             {receipts.map((r) => (
-              <tr key={r.id}>
-                <td>
-                  <div style={{ fontWeight: 600, color: 'var(--blue)' }}>Заказ №{r.orderNumber}</div>
-                  <div className="mono" style={{ fontSize: '11px', color: 'rgba(9, 49, 141, 0.5)' }}>
-                    {r.id}
-                  </div>
-                </td>
-                <td className="mono" style={{ fontSize: '12px' }}>
-                  ФД №{r.fdNumber} · ФПД {r.fpdNumber}
-                </td>
-                <td style={{ fontWeight: 700, color: 'var(--blue)' }}>{formatMoney(r.amount)}</td>
-                <td style={{ fontSize: '13px' }}>{r.customerEmail}</td>
-                <td>
-                  <Badge variant="paid">Фискализирован</Badge>
-                </td>
-                <td>
-                  <Badge variant="succeeded">Отправлен</Badge>
-                </td>
-                <td className="td-actions">
-                  <Button variant="ghost" size="sm" onClick={() => onPreviewReceipt(r)}>
-                    Печатная форма
-                  </Button>
-                </td>
-              </tr>
+              <FiscalReceiptRow
+                key={r.id}
+                receipt={r}
+                onPreview={onPreviewReceipt}
+              />
             ))}
           </tbody>
         </table>
+
+        {receipts.length === 0 && (
+          <p className="text-xs text-dp-blue/50 text-center py-8">
+            Нет зарегистрированных чеков.
+          </p>
+        )}
       </div>
     </div>
   );

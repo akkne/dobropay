@@ -2,7 +2,7 @@ import React from 'react';
 import { Brand } from './Brand';
 import { formatMoney, formatDateTime } from '../../utils/formatters';
 
-interface ReceiptProps {
+export interface ReceiptProps {
   orderNumber: string;
   amount: number;
   paymentMethodTitle?: string;
@@ -26,49 +26,53 @@ export const Receipt: React.FC<ReceiptProps> = ({
   inn = '7707083893'
 }) => {
   return (
-    <div className="receipt-preview">
-      <div className="receipt-head">
-        <Brand size={20} />
-        <span className="receipt-status-badge">Оплачено</span>
+    <div className="w-full max-w-[370px] mx-auto bg-white border border-dp-line border-t-[5px] border-t-dp-pink rounded-card p-6 shadow-receipt text-dp-blue">
+      <div className="flex items-center justify-between pb-4 border-b border-dp-line">
+        <Brand size={18} />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-pill text-xs font-semibold bg-dp-green-blush text-dp-green border border-dp-green/20">
+          Оплачено
+        </span>
       </div>
 
-      <div className="receipt-title">Чек · Заказ №{orderNumber}</div>
+      <div className="py-3 text-center text-sm font-bold tracking-tight border-b border-dashed border-dp-line">
+        Электронный чек · Заказ №{orderNumber}
+      </div>
 
-      <dl className="receipt-dl">
-        <div className="receipt-dl-row">
-          <dt>Организация</dt>
-          <dd>{legalEntity}</dd>
+      <dl className="py-3 space-y-2 text-xs">
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">Организация</dt>
+          <dd className="font-medium text-right">{legalEntity}</dd>
         </div>
-        <div className="receipt-dl-row">
-          <dt>ИНН</dt>
-          <dd className="mono">{inn}</dd>
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">ИНН</dt>
+          <dd className="font-mono text-right font-medium">{inn}</dd>
         </div>
-        <div className="receipt-dl-row">
-          <dt>Способ</dt>
-          <dd>{paymentMethodTitle}</dd>
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">Способ оплаты</dt>
+          <dd className="font-medium text-right">{paymentMethodTitle}</dd>
         </div>
-        <div className="receipt-dl-row">
-          <dt>Дата</dt>
-          <dd className="mono">{formatDateTime(createdAt)}</dd>
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">Дата и время</dt>
+          <dd className="font-mono text-right font-medium">{formatDateTime(createdAt)}</dd>
         </div>
-        <div className="receipt-dl-row">
-          <dt>Фискальный накопитель (ФН)</dt>
-          <dd className="mono">{fnNumber}</dd>
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">ФН</dt>
+          <dd className="font-mono text-right font-medium">{fnNumber}</dd>
         </div>
-        <div className="receipt-dl-row">
-          <dt>ФД / ФПД</dt>
-          <dd className="mono">{fdNumber} / {fpdNumber}</dd>
+        <div className="flex items-center justify-between border-b border-dashed border-dp-line/60 pb-1.5">
+          <dt className="text-dp-blue/70">ФД / ФПД</dt>
+          <dd className="font-mono text-right font-medium">{fdNumber} / {fpdNumber}</dd>
         </div>
       </dl>
 
-      <div className="receipt-total-row">
-        <span style={{ fontSize: '15px', fontWeight: 550, color: 'rgba(9, 49, 141, 0.7)' }}>
-          Итого
-        </span>
-        <strong>{formatMoney(amount)}</strong>
+      <div className="flex items-center justify-between pt-3 border-t-2 border-dp-blue text-base">
+        <span className="font-semibold text-dp-blue/80">Итого к оплате</span>
+        <strong className="text-xl font-bold font-mono tracking-tight">{formatMoney(amount)}</strong>
       </div>
 
-      <div className="receipt-demo-note">Электронный кассовый чек по 54-ФЗ</div>
+      <div className="mt-4 pt-3 border-t border-dashed border-dp-line text-[11px] text-center text-dp-blue/60">
+        Чек фискализирован в соответствии с 54-ФЗ. Доступен в электронной форме в реестре ФНС.
+      </div>
     </div>
   );
 };

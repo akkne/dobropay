@@ -1,21 +1,22 @@
 import React from 'react';
-import { formatMoney } from '../../utils/formatters';
+import { OrderShopInfo } from './OrderShopInfo';
+import { OrderAmountBadge } from './OrderAmountBadge';
 
-interface OrderSummaryProps {
+export interface OrderSummaryProps {
   shopName: string;
   orderId: string;
   amount: number;
 }
 
-export const OrderSummary: React.FC<OrderSummaryProps> = ({ shopName, orderId, amount }) => {
+export const OrderSummary: React.FC<OrderSummaryProps> = ({
+  shopName,
+  orderId,
+  amount
+}) => {
   return (
-    <section className="order-summary">
-      <div className="order-shop-row">
-        <span className="order-shop-name">{shopName}</span>
-        <span className="order-order-id">Заказ №{orderId}</span>
-      </div>
-      <div className="order-amount-label">К оплате</div>
-      <div className="order-amount-val">{formatMoney(amount)}</div>
-    </section>
+    <div className="bg-white border border-dp-line rounded-card p-5 shadow-sm flex items-center justify-between">
+      <OrderShopInfo shopName={shopName} />
+      <OrderAmountBadge amount={amount} orderId={orderId} />
+    </div>
   );
 };

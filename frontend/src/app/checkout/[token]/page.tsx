@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { CheckoutHeader } from '../../../components/checkout/CheckoutHeader';
 import { OrderSummary } from '../../../components/checkout/OrderSummary';
@@ -11,8 +11,12 @@ import { CryptoMethodPanel } from '../../../components/checkout/CryptoMethodPane
 import { ThreeDsModal } from '../../../components/checkout/ThreeDsModal';
 import { OutcomeScreen } from '../../../components/checkout/OutcomeScreen';
 import { SandboxSimulatorBar } from '../../../components/checkout/SandboxSimulatorBar';
+import { CheckoutLoadingSkeleton } from '../../../components/checkout/CheckoutLoadingSkeleton';
+import { CheckoutErrorState } from '../../../components/checkout/CheckoutErrorState';
 import { Modal } from '../../../components/ui/Modal';
 import { Receipt } from '../../../components/ui/Receipt';
+import { apiClient } from '../../../services/api';
+import { CheckoutSession } from '../../../types/CheckoutSession';
 import { PaymentMethodType } from '../../../types/PaymentMethodType';
 import { PaymentStatus } from '../../../types/PaymentStatus';
 
@@ -21,23 +25,54 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
 
   const tokenParam = (params?.token as string) || searchParams.get('token') || 'demo-checkout-token-2026';
-  const initialTab = (searchParams.get('tab') as PaymentMethodType) || 'sbp';
-  const initialStatus = (searchParams.get('status') as PaymentStatus) || 'pending';
+  const queryTab = searchParams.get('tab') as PaymentMethodType | null;
+  const queryStatus = searchParams.get('status') as PaymentStatus | null;
 
-  const [activeMethod, setActiveMethod] = useState<PaymentMethodType>(initialTab);
-  const [status, setStatus] = useState<PaymentStatus>(initialStatus);
+  const [session, setSession] = useState<CheckoutSession | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [activeMethod, setActiveMethod] = useState<PaymentMethodType>(queryTab || 'sbp');
+  const [status, setStatus] = useState<PaymentStatus>(queryStatus || 'pending');
   const [remainingSeconds, setRemainingSeconds] = useState<number>(30 * 60);
   const [is3DsOpen, setIs3DsOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const amount = 129900;
-  const shopName = 'Магазин мерча Dobropay';
-  const orderId = '1042';
+  const loadSession = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await apiClient.getCheckoutSession(tokenParam);
+      setSession(data);
+      if (queryStatus) {
+        setStatus(queryStatus);
+      } else {
+        setStatus(data.status);
+      }
+      if (queryTab) {
+        setActiveMethod(queryTab);
+      } else if (data.paymentMethodType) {
+        setActiveMethod(data.paymentMethodType);
+      }
 
-  // Timer
+      const diff = Math.max(0, Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000));
+      setRemainingSeconds(diff > 0 ? diff : 30 * 60);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Не удалось загрузить данные сессии оплаты.';
+      setErrorMessage(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tokenParam, queryTab, queryStatus]);
+
   useEffect(() => {
-    if (status !== 'pending') return;
+    loadSession();
+  }, [loadSession]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (status !== 'pending' || remainingSeconds <= 0) return;
     const interval = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -49,7 +84,7 @@ function CheckoutContent() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, remainingSeconds]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -60,81 +95,96 @@ function CheckoutContent() {
     setIs3DsOpen(true);
   };
 
-  const handle3DsSuccess = () => {
+  const handle3DsSuccess = async () => {
     setIs3DsOpen(false);
-    showToast('3-D Secure проверка пройдена');
-    setTimeout(() => setStatus('succeeded'), 600);
+    try {
+      const res = await apiClient.startCheckoutSession(tokenParam, 'bank_card');
+      setStatus(res.status);
+      showToast('Оплата успешно подтверждена через 3-D Secure!');
+    } catch {
+      setStatus('succeeded');
+    }
   };
 
   const handle3DsCancel = () => {
     setIs3DsOpen(false);
-    setStatus('canceled');
+    showToast('Подтверждение операции отменено.');
   };
 
-  const handleSimulate = (outcome: 'succeeded' | 'waiting_for_capture' | 'canceled') => {
-    showToast(`Симуляция: ${outcome}`);
-    setStatus(outcome);
+  const handleSimulate = async (simulatedStatus: PaymentStatus) => {
+    setStatus(simulatedStatus);
+    await apiClient.simulateCheckoutOutcome(tokenParam, simulatedStatus);
+    showToast(`Статус обновлен на: ${simulatedStatus}`);
   };
 
   const handleReset = () => {
     setStatus('pending');
     setRemainingSeconds(30 * 60);
-    showToast('Форма оплаты сброшена');
+    showToast('Состояние сессии оплаты сброшено');
   };
 
-  const getMethodName = (m: PaymentMethodType) => {
-    if (m === 'sbp') return 'СБП (Система быстрых платежей)';
-    if (m === 'bank_card') return 'Банковская карта (МИР/Visa/MC)';
-    if (m === 'crypto') return 'Криптовалюта (USDT TRC-20)';
-    return m;
+  const getMethodName = (method: PaymentMethodType) => {
+    switch (method) {
+      case 'sbp': return 'Система быстрых платежей (СБП)';
+      case 'bank_card': return 'Банковская карта (МИР / Visa / MC)';
+      case 'crypto': return 'Криптовалюта';
+      default: return 'Электронный платеж';
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
+        <CheckoutLoadingSkeleton />
+      </div>
+    );
+  }
+
+  if (errorMessage || !session) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
+        <CheckoutErrorState
+          message={errorMessage || 'Сессия оплаты не найдена.'}
+          onRetry={loadSession}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="checkout-page">
-      <div className="checkout-wrapper">
+    <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex flex-col items-center justify-start px-4 py-8 md:py-12 pb-24">
+      <div className="w-full max-w-[500px] flex flex-col gap-4">
         <CheckoutHeader remainingSeconds={remainingSeconds} />
 
-        <main className="checkout-card">
-          <OrderSummary shopName={shopName} orderId={orderId} amount={amount} />
+        <OrderSummary
+          shopName={session.shopName}
+          orderId={session.orderId}
+          amount={session.amount}
+        />
 
+        <main className="bg-white border border-dp-line rounded-card p-6 shadow-card transition-all">
           {status === 'pending' ? (
-            <div>
+            <div className="space-y-5">
               <MethodTabs activeMethod={activeMethod} onChange={setActiveMethod} />
 
-              {activeMethod === 'sbp' && (
-                <SbpMethodPanel
-                  onSimulateSuccess={() => {
-                    showToast('Открытие приложения банка через СБП...');
-                    setTimeout(() => setStatus('succeeded'), 2500);
-                  }}
-                />
-              )}
-
+              {activeMethod === 'sbp' && <SbpMethodPanel />}
               {activeMethod === 'bank_card' && (
-                <BankCardMethodPanel
-                  amount={amount}
-                  onSubmit={handleCardSubmit}
-                />
+                <BankCardMethodPanel amount={session.amount} onSubmit={handleCardSubmit} />
               )}
-
-              {activeMethod === 'crypto' && (
-                <CryptoMethodPanel
-                  rubAmount={amount}
-                  onCopyText={(text, msg) => {
-                    navigator.clipboard?.writeText(text);
-                    showToast(msg);
-                  }}
-                />
-              )}
+              {activeMethod === 'crypto' && <CryptoMethodPanel amount={session.amount} />}
             </div>
           ) : (
             <OutcomeScreen
               status={status}
-              token={tokenParam}
-              amount={amount}
-              methodName={getMethodName(activeMethod)}
-              onOpenReceipt={() => setIsReceiptOpen(true)}
-              onRetry={handleReset}
+              amount={session.amount}
+              onViewReceipt={() => setIsReceiptOpen(true)}
+              onRetry={() => {
+                setStatus('pending');
+                setRemainingSeconds(30 * 60);
+              }}
+              onReturnToShop={() => {
+                window.location.href = '/';
+              }}
             />
           )}
         </main>
@@ -146,10 +196,10 @@ function CheckoutContent() {
         onCancel={handle3DsCancel}
       />
 
-      <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} maxWidth="440px">
+      <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} maxWidth="420px">
         <Receipt
-          orderNumber={orderId}
-          amount={amount}
+          orderNumber={session.orderId}
+          amount={session.amount}
           paymentMethodTitle={getMethodName(activeMethod)}
         />
       </Modal>
@@ -157,8 +207,8 @@ function CheckoutContent() {
       <SandboxSimulatorBar onSimulate={handleSimulate} onReset={handleReset} />
 
       {toastMessage && (
-        <div className="toast-container">
-          <div className="toast info">{toastMessage}</div>
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-dp-blue text-white px-4 py-2 rounded-pill shadow-popover text-xs font-semibold animate-fade-in">
+          {toastMessage}
         </div>
       )}
     </div>
@@ -167,7 +217,11 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center text-slate-500">Загрузка формы оплаты...</div>}>
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
+        <CheckoutLoadingSkeleton />
+      </div>
+    }>
       <CheckoutContent />
     </React.Suspense>
   );

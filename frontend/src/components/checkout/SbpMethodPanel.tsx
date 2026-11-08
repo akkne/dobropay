@@ -1,52 +1,24 @@
-import React, { useMemo } from 'react';
-import { generateQrSvgString } from '../../utils/qrcode';
-import { Button } from '../ui/Button';
+import React from 'react';
+import { SbpQrDisplay } from './SbpQrDisplay';
+import { SbpBankDeeplinkButton } from './SbpBankDeeplinkButton';
+import { SbpStatusTicker } from './SbpStatusTicker';
 
-interface SbpMethodPanelProps {
-  qrPayload?: string;
-  onSimulateSuccess: () => void;
+export interface SbpMethodPanelProps {
+  payload?: string;
+  deeplink?: string;
 }
 
 export const SbpMethodPanel: React.FC<SbpMethodPanelProps> = ({
-  qrPayload = 'https://qr.nspk.ru/AD10005TB5978E49A924845579C247B6',
-  onSimulateSuccess
+  payload = 'https://qr.nspk.ru/AD100004738291048291847291048291?type=02&bank=100000000004&crc=AB12',
+  deeplink = 'https://qr.nspk.ru/AD100004738291048291847291048291'
 }) => {
-  const qrSvg = useMemo(() => generateQrSvgString(qrPayload, 210), [qrPayload]);
-
   return (
-    <section className="method-panel active" aria-labelledby="tab-sbp">
-      <div className="sbp-panel-content">
-        <div className="sbp-logo-badge">
-          <svg width="18" height="18" viewBox="0 0 32 32">
-            <polygon points="16,2 30,28 2,28" fill="#F59ACC" stroke="#09318D" strokeWidth="2" />
-            <polygon points="16,9 25,25 7,25" fill="#09318D" />
-          </svg>
-          <span>Система быстрых платежей</span>
-        </div>
-
-        <div
-          className="sbp-qr-wrapper"
-          dangerouslySetInnerHTML={{ __html: qrSvg }}
-        />
-
-        <p className="sbp-instruction">
-          Отсканируйте QR-код в приложении любого банка или камерой смартфона для мгновенной оплаты без комиссии
-        </p>
-
-        <Button
-          variant="primary"
-          size="lg"
-          full
-          onClick={onSimulateSuccess}
-        >
-          Открыть в приложении банка
-        </Button>
-
-        <div className="sbp-pulse-indicator">
-          <span className="pulse-dot" />
-          <span>Ожидаем подтверждения оплаты банком...</span>
-        </div>
+    <div className="flex flex-col items-center space-y-5 py-2">
+      <SbpQrDisplay payload={payload} />
+      <SbpStatusTicker />
+      <div className="w-full pt-1">
+        <SbpBankDeeplinkButton deeplink={deeplink} />
       </div>
-    </section>
+    </div>
   );
 };

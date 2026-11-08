@@ -4,7 +4,7 @@ import { formatMoney } from '../../utils/formatters';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
-interface CaptureModalProps {
+export interface CaptureModalProps {
   payment: Payment | null;
   isOpen: boolean;
   onClose: () => void;
@@ -37,43 +37,43 @@ export const CaptureModal: React.FC<CaptureModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--blue)', marginBottom: '6px' }}>
-        Подтверждение списания (Capture)
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
+      <h3 className="text-base font-bold text-dp-blue mb-1">
+        Подтверждение списания холда (Capture)
       </h3>
-      <p style={{ fontSize: '14px', color: 'rgba(9, 49, 141, 0.7)', marginBottom: '18px' }}>
-        Заказ №{payment.externalOrderId || payment.id.substring(0, 8)}
+      <p className="text-xs text-dp-blue/60 mb-4">
+        Заказ #{payment.orderId || payment.externalOrderId}
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="capture-amount">
-            Сумма списания (₽)
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-dp-blue" htmlFor="capture-amount">
+            Сумма списания (рубли)
           </label>
           <input
             type="number"
             id="capture-amount"
-            className="form-input mono"
             step="0.01"
-            min="0.01"
-            max={(payment.amount / 100).toFixed(2)}
+            min="1"
+            max={payment.amount / 100}
+            className="w-full px-3.5 py-2.5 text-xs rounded-card border border-dp-line bg-white font-mono focus:outline-none focus:border-dp-blue"
             value={rubles}
             onChange={(e) => setRubles(e.target.value)}
             required
           />
-          <span className="form-hint">
-            Полная сумма заказа: {formatMoney(payment.amount)}
-          </span>
+          <p className="text-[11px] text-dp-blue/60">
+            Максимально доступно для списания: <strong className="font-mono">{formatMoney(payment.amount)}</strong>
+          </p>
         </div>
 
-        <p style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.7)', marginBottom: '18px' }}>
-          Вы можете списать полную или частичную сумму. Оставшаяся сумма холда будет автоматически
-          разблокирована на счёте покупателя.
-        </p>
-
-        <Button type="submit" variant="primary" size="lg" full>
-          Списать средства
-        </Button>
+        <div className="flex gap-2 pt-2">
+          <Button type="button" variant="outline" size="sm" full onClick={onClose}>
+            Отмена
+          </Button>
+          <Button type="submit" variant="primary-blue" size="sm" full>
+            Подтвердить списание
+          </Button>
+        </div>
       </form>
     </Modal>
   );

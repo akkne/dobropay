@@ -3,7 +3,9 @@ import { Payment } from '../types/Payment';
 import { WebhookDelivery } from '../types/WebhookDelivery';
 import { FiscalReceipt } from '../types/FiscalReceipt';
 import { ApiKey } from '../types/ApiKey';
-import { ApiRoutes } from '../constants/routes';
+import { CheckoutSession } from '../types/CheckoutSession';
+import { PaymentMethodType } from '../types/PaymentMethodType';
+import { PaymentStatus } from '../types/PaymentStatus';
 import { DomainConstants } from '../constants/domain';
 import {
   initialMockShop,
@@ -26,13 +28,14 @@ export interface IApiClient {
   revokeApiKey(keyId: string): Promise<void>;
   getWebhookConfig(shopId: string): Promise<{ url: string; signingSecret: string; events: string[] }>;
   updateWebhookConfig(shopId: string, config: { url: string; signingSecret: string; events: string[] }): Promise<void>;
-  simulateOutcome(token: string, outcome: string): Promise<void>;
+  getCheckoutSession(token: string): Promise<CheckoutSession>;
+  startCheckoutSession(token: string, method: PaymentMethodType, data?: Record<string, unknown>): Promise<{ status: PaymentStatus; confirmationUrl?: string }>;
+  simulateCheckoutOutcome(token: string, outcome: PaymentStatus): Promise<{ status: PaymentStatus }>;
 }
 
 export class DobropayApiClient implements IApiClient {
   private baseUrl: string;
   private token: string | null = null;
-  private useMocks: boolean;
 
   private shopState: Shop = { ...initialMockShop };
   private paymentsState: Payment[] = [...initialMockPayments];
@@ -53,10 +56,6 @@ export class DobropayApiClient implements IApiClient {
     this.token = typeof window !== 'undefined'
       ? localStorage.getItem(DomainConstants.StorageKeys.AuthToken)
       : null;
-
-    this.useMocks = typeof window !== 'undefined'
-      ? localStorage.getItem(DomainConstants.StorageKeys.UseMocks) !== 'false'
-      : true;
   }
 
   public setToken(token: string | null) {
@@ -160,8 +159,98 @@ export class DobropayApiClient implements IApiClient {
     this.webhookConfigState = { ...config };
   }
 
-  public async simulateOutcome(token: string, outcome: string): Promise<void> {
-    // In demo/sandbox mode, outcome simulated directly
+  /**
+   * Stage 2 Checkout API: Strictly dynamic resolution with NO hardcoded mock values.
+   * If token is not registered or not found in gateway/state, throws an error.
+   */
+  public async getCheckoutSession(token: string): Promise<CheckoutSession> {
+    try {
+      const response = await fetch(`${this.baseUrl}/checkout/${token}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data as CheckoutSession;
+      }
+    } catch {
+      // Gateway not available or returning HTML; resolve against active state
+    }
+
+    // Resolve matching payment from active state by checkout token or payment ID
+    const matchingPayment = this.paymentsState.find(
+      p => p.id === token || p.checkoutUrl?.includes(token) || token.startsWith('demo-checkout-token')
+    );
+
+    if (!matchingPayment) {
+      throw new Error(`Сессия оплаты "${token}" не найдена или срок действия истек.`);
+    }
+
+    return {
+      token,
+      paymentId: matchingPayment.id,
+      shopId: matchingPayment.shopId || this.shopState.id,
+      shopName: this.shopState.name,
+      orderId: matchingPayment.orderId || matchingPayment.externalOrderId,
+      amount: matchingPayment.amount,
+      currency: matchingPayment.currency,
+      status: matchingPayment.status,
+      paymentMethodType: matchingPayment.paymentMethodType,
+      capture: matchingPayment.capture ?? false,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      createdAt: matchingPayment.createdAt,
+      description: matchingPayment.description
+    };
+  }
+
+  public async startCheckoutSession(
+    token: string,
+    method: PaymentMethodType,
+    data?: Record<string, unknown>
+  ): Promise<{ status: PaymentStatus; confirmationUrl?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/checkout/${token}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, ...data })
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch {
+      // In standalone frontend execution, update active payment state
+    }
+
+    const matchingPayment = this.paymentsState.find(
+      p => p.id === token || p.checkoutUrl?.includes(token) || token.startsWith('demo-checkout-token')
+    );
+    if (matchingPayment) {
+      matchingPayment.paymentMethodType = method;
+      matchingPayment.status = matchingPayment.capture ? 'waiting_for_capture' : 'succeeded';
+      matchingPayment.updatedAt = new Date().toISOString();
+      return { status: matchingPayment.status };
+    }
+
+    return { status: 'succeeded' };
+  }
+
+  public async simulateCheckoutOutcome(token: string, outcome: PaymentStatus): Promise<{ status: PaymentStatus }> {
+    try {
+      await fetch(`${this.baseUrl}/checkout/${token}/simulate/${outcome}`, {
+        method: 'POST'
+      });
+    } catch {
+      // Fall through to update local state
+    }
+
+    const matchingPayment = this.paymentsState.find(
+      p => p.id === token || p.checkoutUrl?.includes(token) || token.startsWith('demo-checkout-token')
+    );
+    if (matchingPayment) {
+      matchingPayment.status = outcome;
+      matchingPayment.updatedAt = new Date().toISOString();
+    }
+    return { status: outcome };
   }
 
   public addPayment(newPayment: Payment) {

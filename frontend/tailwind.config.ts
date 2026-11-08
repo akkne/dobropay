@@ -26,17 +26,27 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['var(--font-sans)', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Arial', 'sans-serif'],
-        mono: ['var(--mono)', 'ui-monospace', '"SFMono-Regular"', 'Consolas', 'Menlo', 'monospace'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', '"SFMono-Regular"', 'Consolas', 'Menlo', 'monospace'],
       },
       borderRadius: {
         card: '19px',
         pill: '99px',
+        xs: '5px',
+        sm: '8px',
       },
       boxShadow: {
+        sm: '0 2px 8px rgba(9, 49, 141, 0.06)',
         card: '0 12px 32px rgba(9, 49, 141, 0.12)',
         receipt: '0 14px 42px rgba(9, 49, 141, 0.12)',
         window: '0 10px 28px rgba(9, 49, 141, 0.07)',
+        popover: '0 16px 48px rgba(9, 49, 141, 0.16)',
+      },
+      maxWidth: {
+        wrap: '1180px',
+        preview: '960px',
+        content: '1040px',
+        receipt: '370px',
       }
     },
   },

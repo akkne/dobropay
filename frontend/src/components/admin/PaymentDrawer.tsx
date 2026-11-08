@@ -1,11 +1,14 @@
 import React from 'react';
-import Link from 'next/link';
 import { Payment } from '../../types/Payment';
-import { formatMoney, formatDateTime } from '../../utils/formatters';
-import { Badge } from '../ui/Badge';
+import { formatMoney } from '../../utils/formatters';
+import { PaymentStatusBadge } from './PaymentStatusBadge';
+import { PaymentMethodBadge } from './PaymentMethodBadge';
+import { PaymentTimeline } from './PaymentTimeline';
+import { PaymentMetadataTable } from './PaymentMetadataTable';
 import { Button } from '../ui/Button';
 
-interface PaymentDrawerProps {
+export interface PaymentDrawerProps {
+  isOpen: boolean;
   payment: Payment | null;
   onClose: () => void;
   onCapture: (payment: Payment) => void;
@@ -14,128 +17,91 @@ interface PaymentDrawerProps {
 }
 
 export const PaymentDrawer: React.FC<PaymentDrawerProps> = ({
+  isOpen,
   payment,
   onClose,
   onCapture,
   onCancel,
   onRefund
 }) => {
-  if (!payment) return null;
-
-  const remaining = payment.amount - (payment.refundedAmount || 0);
+  if (!isOpen || !payment) return null;
 
   return (
-    <div className={`drawer-overlay active`} onClick={onClose}>
-      <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="drawer-head">
-          <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--blue)' }}>Детали платежа</h3>
-            <div className="mono" style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.6)' }}>
-              {payment.externalOrderId || payment.id}
-            </div>
-          </div>
-          <button type="button" className="modal-close" onClick={onClose}>
-            &times;
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 overflow-hidden" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-xs transition-opacity" />
 
-        <div className="drawer-body">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: 'rgba(9, 49, 141, 0.7)' }}>Статус:</span>
-            <Badge variant={payment.status === 'succeeded' ? 'succeeded' : payment.status === 'waiting_for_capture' ? 'waiting' : 'neutral'}>
-              {payment.status}
-            </Badge>
-          </div>
-
-          <div style={{ background: 'var(--tint)', borderRadius: 'var(--radius-sm)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)' }}>Сумма платежа:</span>
-              <strong style={{ fontSize: '18px', color: 'var(--blue)' }}>{formatMoney(payment.amount)}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)' }}>Доступный остаток:</span>
-              <span className="mono" style={{ fontWeight: 600, color: 'var(--blue)' }}>
-                {formatMoney(remaining)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)' }}>Способ оплаты:</span>
-              <span style={{ fontWeight: 600 }}>{payment.paymentMethodType}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)' }}>Дата создания:</span>
-              <span className="mono" style={{ fontSize: '12px' }}>{formatDateTime(payment.createdAt)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(9, 49, 141, 0.65)' }}>ID транзакции:</span>
-              <span className="mono" style={{ fontSize: '11px' }}>{payment.id}</span>
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--blue)', marginBottom: '12px' }}>
-              Хронология событий:
-            </h4>
-            <div className="timeline">
-              <div className="timeline-item">
-                <strong style={{ fontSize: '13px' }}>Платёж зарегистрирован</strong>
-                <span style={{ fontSize: '11px', color: 'rgba(9, 49, 141, 0.5)' }}>
-                  Получен запрос POST /v1/payments
-                </span>
+      <div
+        className="fixed inset-y-0 right-0 max-w-full flex pl-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-screen max-w-md bg-white border-l border-dp-line shadow-popover p-6 flex flex-col justify-between overflow-y-auto">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-dp-line">
+              <div>
+                <h3 className="text-base font-bold text-dp-blue">
+                  Детали платежа #{payment.orderId || payment.externalOrderId}
+                </h3>
+                <p className="text-xs text-dp-blue/60">{payment.description || 'Оплата заказа'}</p>
               </div>
-              <div className="timeline-item">
-                <strong style={{ fontSize: '13px' }}>Создана попытка оплаты</strong>
-                <span style={{ fontSize: '11px', color: 'rgba(9, 49, 141, 0.5)' }}>
-                  Генерация реквизитов провайдера
-                </span>
-              </div>
-              <div className="timeline-item">
-                <strong style={{ fontSize: '13px' }}>Событие провайдера обработано</strong>
-                <span style={{ fontSize: '11px', color: 'rgba(9, 49, 141, 0.5)' }}>
-                  Состояние обновлено, опубликован Kafka event
-                </span>
-              </div>
-              <div className="timeline-item">
-                <strong style={{ fontSize: '13px' }}>Webhook отправлен мерчанту</strong>
-                <span style={{ fontSize: '11px', color: 'var(--green)' }}>HTTP 200 OK</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="drawer-footer">
-          {payment.status === 'waiting_for_capture' && (
-            <>
-              <Button variant="primary" style={{ flex: 1 }} onClick={() => onCapture(payment)}>
-                Подтвердить списание (Capture)
-              </Button>
-              <Button variant="outline" style={{ flex: 1 }} onClick={() => onCancel(payment)}>
-                Отменить холд (Cancel)
-              </Button>
-            </>
-          )}
-
-          {payment.status === 'succeeded' && remaining > 0 && (
-            <>
-              <Button variant="primary" style={{ flex: 1 }} onClick={() => onRefund(payment)}>
-                Оформить возврат (Refund)
-              </Button>
-              <Link
-                href={`/checkout/${payment.id}?status=succeeded`}
-                target="_blank"
-                className="button outline"
-                style={{ flex: 1, textAlign: 'center' }}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xl text-dp-blue/60 hover:text-dp-blue hover:bg-dp-tint transition-colors"
               >
-                Открыть чек
-              </Link>
-            </>
-          )}
+                &times;
+              </button>
+            </div>
 
-          {payment.status !== 'waiting_for_capture' && (payment.status !== 'succeeded' || remaining <= 0) && (
-            <Button variant="outline" full onClick={onClose}>
-              Закрыть
-            </Button>
-          )}
+            <div className="bg-dp-tint rounded-card p-4 flex items-center justify-between">
+              <div>
+                <div className="text-xs text-dp-blue/60">Сумма платежа</div>
+                <div className="text-2xl font-bold font-mono text-dp-blue">
+                  {formatMoney(payment.amount)}
+                </div>
+              </div>
+              <div className="space-y-1 text-right">
+                <PaymentStatusBadge status={payment.status} />
+                <div>
+                  <PaymentMethodBadge method={payment.paymentMethodType} />
+                </div>
+              </div>
+            </div>
+
+            <PaymentTimeline payment={payment} />
+            <PaymentMetadataTable payment={payment} />
+          </div>
+
+          <div className="pt-6 border-t border-dp-line flex gap-2">
+            {payment.status === 'waiting_for_capture' && (
+              <>
+                <Button
+                  variant="primary-blue"
+                  size="md"
+                  full
+                  onClick={() => onCapture(payment)}
+                >
+                  Списать холд
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => onCancel(payment)}
+                >
+                  Отменить
+                </Button>
+              </>
+            )}
+            {payment.status === 'succeeded' && (
+              <Button
+                variant="outline"
+                size="md"
+                full
+                onClick={() => onRefund(payment)}
+              >
+                Оформить возврат
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

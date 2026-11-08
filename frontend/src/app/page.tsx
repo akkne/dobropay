@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AdminTopBar } from '../components/admin/AdminTopBar';
 import { AdminNavBar, AdminTab } from '../components/admin/AdminNavBar';
@@ -26,6 +26,7 @@ import { WebhookDelivery } from '../types/WebhookDelivery';
 import { FiscalReceipt } from '../types/FiscalReceipt';
 import { ApiKey } from '../types/ApiKey';
 import { Shop } from '../types/Shop';
+import { PaymentMethodType } from '../types/PaymentMethodType';
 
 function AdminContent() {
   const searchParams = useSearchParams();
@@ -51,100 +52,106 @@ function AdminContent() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [webhookConfig, setWebhookConfig] = useState({
-    url: 'https://demo-merchant.local/api/dobropay-webhook',
-    signingSecret: 'dp_sec_99a8b7c6d5e4f3a2b10987654321fedc',
-    events: ['payment.succeeded', 'payment.waiting_for_capture', 'payment.canceled', 'refund.succeeded']
-  });
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const loadData = async () => {
-    const s = await apiClient.getShop('default');
-    setShop(s);
-    const p = await apiClient.getPayments(s.id);
-    setPayments(p);
-    const d = await apiClient.getDeliveries(s.id);
-    setDeliveries(d);
-    const r = await apiClient.getReceipts(s.id);
-    setReceipts(r);
-    const k = await apiClient.getApiKeys(s.id);
-    setApiKeys(k);
-    const wc = await apiClient.getWebhookConfig(s.id);
-    setWebhookConfig(wc);
-    setIsAuthenticated(!!apiClient.getToken());
-  };
+  const loadData = useCallback(async () => {
+    try {
+      const shopData = await apiClient.getShop('shop-1');
+      setShop(shopData);
 
-  useEffect(() => {
-    loadData();
+      const paymentsData = await apiClient.getPayments('shop-1');
+      setPayments(paymentsData);
+
+      const deliveriesData = await apiClient.getDeliveries('shop-1');
+      setDeliveries(deliveriesData);
+
+      const receiptsData = await apiClient.getReceipts('shop-1');
+      setReceipts(receiptsData);
+
+      const keysData = await apiClient.getApiKeys('shop-1');
+      setApiKeys(keysData);
+    } catch {
+      showToast('Ошибка загрузки данных');
+    }
   }, []);
 
   useEffect(() => {
-    if (queryTab) {
-      setActiveTab(queryTab);
-    }
-  }, [queryTab]);
+    loadData();
+    setIsAuthenticated(!!apiClient.getToken());
+  }, [loadData]);
 
-  // Handlers
   const handleCaptureConfirm = async (kopecks: number) => {
     if (!selectedPayment) return;
-    await apiClient.capturePayment('shop', selectedPayment.id, kopecks);
-    setIsCaptureOpen(false);
-    setIsDrawerOpen(false);
-    await loadData();
-    showToast('Списание успешно подтверждено!');
+    try {
+      await apiClient.capturePayment('shop-1', selectedPayment.id, kopecks);
+      setIsCaptureOpen(false);
+      await loadData();
+      showToast(`Холд успешно списан на сумму ${(kopecks / 100).toFixed(2)} ₽!`);
+    } catch {
+      showToast('Ошибка при подтверждении списания');
+    }
+  };
+
+  const handleCancelPayment = async (payment: Payment) => {
+    try {
+      await apiClient.cancelPayment('shop-1', payment.id, 'merchant_canceled');
+      setIsDrawerOpen(false);
+      await loadData();
+      showToast('Платёж успешно отменён');
+    } catch {
+      showToast('Ошибка при отмене платежа');
+    }
   };
 
   const handleRefundConfirm = async (kopecks: number, reason: string) => {
     if (!selectedPayment) return;
-    await apiClient.refundPayment('shop', selectedPayment.id, kopecks, reason);
-    setIsRefundOpen(false);
-    setIsDrawerOpen(false);
-    await loadData();
-    showToast('Возврат успешно проведён!');
-  };
-
-  const handleCancelPayment = async (p: Payment) => {
-    if (confirm('Вы уверены, что хотите отменить холд и разблокировать средства клиенту?')) {
-      await apiClient.cancelPayment('shop', p.id);
-      setIsDrawerOpen(false);
+    try {
+      await apiClient.refundPayment('shop-1', selectedPayment.id, kopecks, reason);
+      setIsRefundOpen(false);
       await loadData();
-      showToast('Холд успешно отменён');
+      showToast(`Возврат на сумму ${(kopecks / 100).toFixed(2)} ₽ успешно оформлен!`);
+    } catch {
+      showToast('Ошибка при оформлении возврата');
     }
   };
 
   const handleCreatePaymentSubmit = (data: {
     amountKopecks: number;
     orderId: string;
-    method: any;
+    method: PaymentMethodType;
     capture: boolean;
   }) => {
+    const newId = `pay-${Date.now()}`;
+    const token = `tok-${Date.now()}`;
+    const checkoutUrl = `/checkout/${token}`;
+
     const newPayment: Payment = {
-      id: `pay-${Date.now()}`,
+      id: newId,
+      shopId: 'shop-1',
+      orderId: data.orderId,
       externalOrderId: data.orderId,
       amount: data.amountKopecks,
       currency: 'RUB',
       status: 'pending',
       paymentMethodType: data.method,
+      capture: !data.capture,
+      checkoutUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      capturedAmount: 0,
-      refundedAmount: 0,
       refunds: []
     };
+
     apiClient.addPayment(newPayment);
     setIsCreatePaymentOpen(false);
     loadData();
-
-    const checkoutUrl = `/checkout/${newPayment.id}`;
     setCreatedCheckoutUrl(checkoutUrl);
   };
 
   return (
-    <div className="admin-layout">
+    <div className="min-h-screen bg-slate-50/70 flex flex-col text-dp-blue">
       <AdminTopBar
         shopName={shop?.name || 'Магазин мерча Dobropay'}
         isAuthenticated={isAuthenticated}
@@ -158,24 +165,25 @@ function AdminContent() {
 
       <AdminNavBar activeTab={activeTab} onChange={setActiveTab} />
 
-      <main className="admin-container">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* VIEW 1: PAYMENTS */}
         {activeTab === 'payments' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="space-y-6">
             <KpiSummaryGrid payments={payments} />
 
             <PaymentsTable
               payments={payments}
-              onOpenCreate={() => setIsCreatePaymentOpen(true)}
-              onOpenDetails={(p) => {
+              onCreatePayment={() => setIsCreatePaymentOpen(true)}
+              onSelectPayment={(p) => {
                 setSelectedPayment(p);
                 setIsDrawerOpen(true);
               }}
-              onOpenCapture={(p) => {
+              onCapture={(p) => {
                 setSelectedPayment(p);
                 setIsCaptureOpen(true);
               }}
-              onOpenRefund={(p) => {
+              onCancel={handleCancelPayment}
+              onRefund={(p) => {
                 setSelectedPayment(p);
                 setIsRefundOpen(true);
               }}
@@ -193,13 +201,13 @@ function AdminContent() {
 
         {/* VIEW 3: DEVELOPER PORTAL */}
         {activeTab === 'developer' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="space-y-6">
             <ApiKeysSection
               apiKeys={apiKeys}
               onCreateKey={async (name) => {
-                const k = await apiClient.createApiKey('shop', name);
+                await apiClient.createApiKey('shop-1', name);
                 await loadData();
-                return k;
+                showToast(`Ключ "${name}" успешно создан!`);
               }}
               onRevokeKey={async (id) => {
                 await apiClient.revokeApiKey(id);
@@ -210,17 +218,14 @@ function AdminContent() {
 
             <WebhooksSection
               deliveries={deliveries}
-              initialUrl={webhookConfig.url}
-              initialSecret={webhookConfig.signingSecret}
-              initialEvents={webhookConfig.events}
               onSaveConfig={async (url, signingSecret, events) => {
-                await apiClient.updateWebhookConfig('shop', { url, signingSecret, events });
+                await apiClient.updateWebhookConfig('shop-1', { url, signingSecret, events });
                 showToast('Настройки Webhook сохранены!');
               }}
               onInspectDelivery={(d) => setInspectDelivery(d)}
               onRetryDelivery={() => {
                 showToast('Повторная отправка Webhook запущена...');
-                setTimeout(() => showToast('Webhook успешно доставлен (HTTP 200)'), 1200);
+                setTimeout(() => showToast('Webhook успешно доставлен (HTTP 200)'), 1000);
               }}
             />
           </div>
@@ -229,28 +234,29 @@ function AdminContent() {
         {/* VIEW 4: ONBOARDING */}
         {activeTab === 'onboarding' && (
           <OnboardingWizard
-            onSuccess={() => showToast('Анкета магазина принята на проверку!')}
-            onGoToPayments={() => setActiveTab('payments')}
+            onComplete={() => {
+              showToast('Заявка принята в работу!');
+              setActiveTab('payments');
+            }}
           />
         )}
       </main>
 
-      {/* MODALS & DRAWERS */}
-      {isDrawerOpen && (
-        <PaymentDrawer
-          payment={selectedPayment}
-          onClose={() => setIsDrawerOpen(false)}
-          onCapture={(p) => {
-            setIsDrawerOpen(false);
-            setIsCaptureOpen(true);
-          }}
-          onCancel={handleCancelPayment}
-          onRefund={(p) => {
-            setIsDrawerOpen(false);
-            setIsRefundOpen(true);
-          }}
-        />
-      )}
+      {/* DRAWERS & MODALS */}
+      <PaymentDrawer
+        isOpen={isDrawerOpen}
+        payment={selectedPayment}
+        onClose={() => setIsDrawerOpen(false)}
+        onCapture={(p) => {
+          setIsDrawerOpen(false);
+          setIsCaptureOpen(true);
+        }}
+        onCancel={handleCancelPayment}
+        onRefund={(p) => {
+          setIsDrawerOpen(false);
+          setIsRefundOpen(true);
+        }}
+      />
 
       <CaptureModal
         payment={selectedPayment}
@@ -274,28 +280,27 @@ function AdminContent() {
 
       {/* Modal: Payment Created */}
       <Modal isOpen={!!createdCheckoutUrl} onClose={() => setCreatedCheckoutUrl(null)}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '40px', marginBottom: '10px' }}>🎉</div>
-          <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--blue)', marginBottom: '6px' }}>
+        <div className="text-center space-y-4">
+          <div className="text-4xl">🎉</div>
+          <h3 className="text-base font-bold text-dp-blue">
             Платёжная ссылка готова!
           </h3>
-          <p style={{ fontSize: '14px', color: 'rgba(9, 49, 141, 0.7)', marginBottom: '18px' }}>
-            Отправьте эту ссылку клиенту или перейдите для проверки формы оплаты
+          <p className="text-xs text-dp-blue/70">
+            Отправьте эту ссылку клиенту или перейдите для проверки Hosted Checkout
           </p>
 
-          <div className="form-group">
-            <input
-              type="text"
-              className="form-input mono"
-              readOnly
-              value={createdCheckoutUrl ? `${typeof window !== 'undefined' ? window.location.origin : ''}${createdCheckoutUrl}` : ''}
-            />
-          </div>
+          <input
+            type="text"
+            className="w-full px-3 py-2 text-xs font-mono rounded-card border border-dp-line bg-dp-tint select-all"
+            readOnly
+            value={createdCheckoutUrl ? `${typeof window !== 'undefined' ? window.location.origin : ''}${createdCheckoutUrl}` : ''}
+          />
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+          <div className="flex gap-2 pt-2">
             <Button
-              variant="primary"
-              style={{ flex: 1 }}
+              variant="primary-blue"
+              size="sm"
+              full
               onClick={() => {
                 if (createdCheckoutUrl) {
                   navigator.clipboard?.writeText(`${window.location.origin}${createdCheckoutUrl}`);
@@ -306,8 +311,13 @@ function AdminContent() {
               Скопировать ссылку
             </Button>
             {createdCheckoutUrl && (
-              <a href={createdCheckoutUrl} target="_blank" className="button outline" style={{ flex: 1 }}>
-                Открыть Hosted Checkout
+              <a
+                href={createdCheckoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-pill text-xs font-semibold border border-dp-line text-dp-blue hover:bg-dp-tint transition-colors"
+              >
+                Открыть Checkout
               </a>
             )}
           </div>
@@ -321,7 +331,7 @@ function AdminContent() {
       />
 
       {/* Modal: Fiscal Receipt Preview */}
-      <Modal isOpen={!!previewReceipt} onClose={() => setPreviewReceipt(null)} maxWidth="440px">
+      <Modal isOpen={!!previewReceipt} onClose={() => setPreviewReceipt(null)} maxWidth="420px">
         {previewReceipt && (
           <Receipt
             orderNumber={previewReceipt.orderNumber}
@@ -346,8 +356,8 @@ function AdminContent() {
       />
 
       {toastMessage && (
-        <div className="toast-container">
-          <div className="toast info">{toastMessage}</div>
+        <div className="fixed bottom-6 right-6 z-50 bg-dp-blue text-white px-4 py-2.5 rounded-pill shadow-popover text-xs font-semibold animate-fade-in">
+          {toastMessage}
         </div>
       )}
     </div>
@@ -356,7 +366,7 @@ function AdminContent() {
 
 export default function AdminPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center text-slate-500">Загрузка панели управления...</div>}>
+    <React.Suspense fallback={<div className="p-8 text-center text-dp-blue/60">Загрузка панели управления...</div>}>
       <AdminContent />
     </React.Suspense>
   );

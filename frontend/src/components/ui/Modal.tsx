@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   maxWidth?: string;
@@ -26,15 +26,18 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className="modal-card"
+        className="relative w-full bg-white rounded-card shadow-popover border border-dp-line p-6 md:p-8 max-h-[92vh] overflow-y-auto"
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          className="modal-close"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-2xl leading-none text-dp-blue/60 hover:text-dp-blue hover:bg-dp-tint transition-colors cursor-pointer"
           onClick={onClose}
           aria-label="Закрыть"
         >

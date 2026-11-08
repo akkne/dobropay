@@ -4,7 +4,7 @@ import { formatMoney } from '../../utils/formatters';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
-interface RefundModalProps {
+export interface RefundModalProps {
   payment: Payment | null;
   isOpen: boolean;
   onClose: () => void;
@@ -40,52 +40,57 @@ export const RefundModal: React.FC<RefundModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--blue)', marginBottom: '6px' }}>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
+      <h3 className="text-base font-bold text-dp-blue mb-1">
         Оформление возврата средств (Refund)
       </h3>
-      <p style={{ fontSize: '14px', color: 'rgba(9, 49, 141, 0.7)', marginBottom: '18px' }}>
-        Заказ №{payment.externalOrderId || payment.id.substring(0, 8)}
+      <p className="text-xs text-dp-blue/60 mb-4">
+        Заказ #{payment.orderId || payment.externalOrderId}
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="refund-amount">
-            Сумма возврата (₽)
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-dp-blue" htmlFor="refund-amount">
+            Сумма возврата (рубли)
           </label>
           <input
             type="number"
             id="refund-amount"
-            className="form-input mono"
             step="0.01"
-            min="0.01"
-            max={(remaining / 100).toFixed(2)}
+            min="1"
+            max={remaining / 100}
+            className="w-full px-3.5 py-2.5 text-xs rounded-card border border-dp-line bg-white font-mono focus:outline-none focus:border-dp-blue"
             value={rubles}
             onChange={(e) => setRubles(e.target.value)}
             required
           />
-          <span className="form-hint">
-            Доступно для возврата: {formatMoney(remaining)}
-          </span>
+          <p className="text-[11px] text-dp-blue/60">
+            Доступный остаток для возврата: <strong className="font-mono">{formatMoney(remaining)}</strong>
+          </p>
         </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="refund-reason">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-dp-blue" htmlFor="refund-reason">
             Причина возврата
           </label>
           <input
             type="text"
             id="refund-reason"
-            className="form-input"
+            className="w-full px-3.5 py-2.5 text-xs rounded-card border border-dp-line bg-white focus:outline-none focus:border-dp-blue"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             required
           />
         </div>
 
-        <Button type="submit" variant="primary" size="lg" full>
-          Подтвердить возврат средств
-        </Button>
+        <div className="flex gap-2 pt-2">
+          <Button type="button" variant="outline" size="sm" full onClick={onClose}>
+            Отмена
+          </Button>
+          <Button type="submit" variant="primary-blue" size="sm" full>
+            Подтвердить возврат
+          </Button>
+        </div>
       </form>
     </Modal>
   );
