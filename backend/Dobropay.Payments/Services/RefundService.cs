@@ -42,7 +42,8 @@ public sealed class RefundService(
                 request.PaymentId,
                 request.Amount,
                 request.Currency,
-                Reason = reason
+                Reason = reason,
+                Receipt = request.Receipt
             }));
 
         var existing = await paymentsRepository.FindIdempotencyRecordAsync(
@@ -153,6 +154,23 @@ public sealed class RefundService(
         try
         {
             await refundRepository.AddRefundAsync(refund, cancellationToken);
+            if (request.Receipt is not null)
+            {
+                var receiptPayload = new PaymentReceiptPayload
+                {
+                    Id = Guid.NewGuid(),
+                    ShopId = shopId,
+                    PaymentId = payment.Id,
+                    RefundId = refund.Id,
+                    ReceiptType = ReceiptTypes.Refund,
+                    TaxSystemCode = request.Receipt.TaxSystemCode ?? DomainConstants.DefaultTaxSystemCode,
+                    CustomerEmail = string.IsNullOrWhiteSpace(request.Receipt.Customer?.Email) ? null : request.Receipt.Customer.Email.Trim(),
+                    CustomerPhone = string.IsNullOrWhiteSpace(request.Receipt.Customer?.Phone) ? null : request.Receipt.Customer.Phone.Trim(),
+                    ItemsJson = JsonSerializer.Serialize(request.Receipt.Items ?? []),
+                    CreatedAt = now
+                };
+                await paymentsRepository.AddReceiptPayloadAsync(receiptPayload, cancellationToken);
+            }
             await paymentsRepository.AddIdempotencyRecordAsync(idempotencyRecord, cancellationToken);
             await paymentsRepository.AddOutboxEventAsync(outboxEvent, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);

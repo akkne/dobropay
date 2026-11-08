@@ -164,7 +164,7 @@ public static class RefundsEndpoints
             var result = await refundService.CreateRefundAsync(
                 shopId,
                 idempotencyKey,
-                new CreateRefundRequest(id, body.Amount, body.Currency, body.Reason),
+                new CreateRefundRequest(id, body.Amount, body.Currency, body.Reason, body.Receipt),
                 http.TraceIdentifier,
                 ct);
             return MapRefundResult(result);

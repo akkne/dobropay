@@ -97,7 +97,7 @@ flowchart LR
 ## Этап 3. Полноценная фискализация по 54-ФЗ и публичный поиск чеков (`Dobropay.Receipts`)
 
 ### Эпик 3.1. Номенклатура чека (54-ФЗ) и безопасный обмен данными между `Payments` и `Receipts`
-- **Задача 3.1.1 — Хранение фискального запроса в `payments-db`**:
+- [x] **Задача 3.1.1 — Хранение фискального запроса в `payments-db`**:
   - Принимать в `POST /v1/payments` и `POST /v1/refunds` опциональный объект `receipt` (`customer`, `items`, `tax_system_code`).
   - Сохранять его в сущности `PaymentReceiptPayload` в `payments-db` и отдавать только по внутреннему авторизованному маршруту `GET /internal/v1/shops/{shopId:guid}/payments/{paymentId:guid}/receipt-context` (чтобы PII покупателя не попадали в Kafka).
 - **Задача 3.1.2 — Расширение схемы `receipts-db` до стандарта 54-ФЗ**:

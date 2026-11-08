@@ -12,6 +12,7 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
     public List<ProviderInbox> InboxItems { get; } = [];
     public List<OutboxEvent> OutboxEvents { get; } = [];
     public List<SavedPaymentMethod> SavedPaymentMethods { get; } = [];
+    public List<PaymentReceiptPayload> ReceiptPayloads { get; } = [];
 
     public Task<IdempotencyRecord?> FindIdempotencyRecordAsync(
         Guid shopId,
@@ -210,6 +211,20 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
         SavedPaymentMethods.Add(method);
         return Task.CompletedTask;
     }
+
+    public Task AddReceiptPayloadAsync(PaymentReceiptPayload payload, CancellationToken cancellationToken)
+    {
+        ReceiptPayloads.Add(payload);
+        return Task.CompletedTask;
+    }
+
+    public Task<PaymentReceiptPayload?> FindReceiptPayloadAsync(
+        Guid shopId,
+        Guid paymentId,
+        Guid? refundId,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(ReceiptPayloads.SingleOrDefault(
+            x => x.ShopId == shopId && x.PaymentId == paymentId && x.RefundId == refundId));
 
     public void ClearTracking()
     {

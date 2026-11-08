@@ -27,5 +27,7 @@ public interface IPaymentsRepository
     Task<SavedPaymentMethodView?> FindSavedPaymentMethodViewAsync(Guid shopId, Guid methodId, CancellationToken cancellationToken);
     Task<IReadOnlyList<SavedPaymentMethodView>> ListSavedPaymentMethodsAsync(Guid shopId, int limit, CancellationToken cancellationToken);
     Task AddSavedPaymentMethodAsync(SavedPaymentMethod method, CancellationToken cancellationToken);
+    Task AddReceiptPayloadAsync(PaymentReceiptPayload payload, CancellationToken cancellationToken);
+    Task<PaymentReceiptPayload?> FindReceiptPayloadAsync(Guid shopId, Guid paymentId, Guid? refundId, CancellationToken cancellationToken);
     void ClearTracking();
 }

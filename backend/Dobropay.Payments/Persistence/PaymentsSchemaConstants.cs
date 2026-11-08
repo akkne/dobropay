@@ -10,6 +10,7 @@ public static class PaymentsSchemaConstants
     public const string OutboxEventsTable = "outbox_events";
     public const string RefundsTable = "refunds";
     public const string SavedPaymentMethodsTable = "saved_payment_methods";
+    public const string PaymentReceiptPayloadsTable = "payment_receipt_payloads";
     public const string JsonbColumnType = "jsonb";
     public const string NowDefaultValueExpression = "now()";
     public const int CurrencyMaxLength = 3;
@@ -30,4 +31,9 @@ public static class PaymentsSchemaConstants
     public const int CryptoAmountMaxLength = 64;
     public const int DepositAddressMaxLength = 128;
     public const int TxHashMaxLength = 128;
+    public const int ReceiptTypeMaxLength = 32;
+    public const int CustomerEmailMaxLength = 256;
+    public const int CustomerPhoneMaxLength = 64;
+    public const int ReceiptItemDescriptionMaxLength = 256;
+    public const int ReceiptItemQuantityMaxLength = 32;
 }
