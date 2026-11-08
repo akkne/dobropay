@@ -6,6 +6,7 @@ using Dobropay.Contracts.Events;
 using Dobropay.Contracts.Security;
 using Dobropay.Contracts.Versioning;
 using Dobropay.Messaging.Database;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Payments.Domain;
 using Dobropay.Payments.Persistence;
 using Dobropay.Payments.Provider;
@@ -44,6 +45,7 @@ public static class PaymentsEndpoints
             BankCardPaymentProvider cardProvider,
             CryptoPaymentProvider cryptoProvider,
             ICryptoExchangeRateProvider cryptoRateProvider,
+            IMetricsRecorder? metricsRecorder,
             CancellationToken ct) =>
             HandleCreatePaymentAsync(
                 http,
@@ -60,7 +62,8 @@ public static class PaymentsEndpoints
                 cryptoRateProvider,
                 options,
                 app.Logger,
-                ct))
+                ct,
+                metricsRecorder))
         .WithTags("Payments")
         .WithSummary("Create a RUB payment")
         .Produces<PaymentResponse>(StatusCodes.Status201Created)
@@ -674,7 +677,8 @@ public static class PaymentsEndpoints
         ICryptoExchangeRateProvider cryptoRateProvider,
         PaymentsOptions options,
         ILogger logger,
-        CancellationToken ct)
+        CancellationToken ct,
+        IMetricsRecorder? metricsRecorder = null)
     {
         var shopId = await developerApiClient.ResolveShopIdByApiKeyAsync(
             http.Request.Headers[HttpHeaderNames.ApiKey].ToString(),
@@ -871,6 +875,7 @@ public static class PaymentsEndpoints
                 await repository.AddAttemptAsync(recurringAttempt, ct);
                 await repository.AddOutboxEventAsync(outboxEvent, ct);
                 await unitOfWork.SaveChangesAsync(ct);
+                metricsRecorder?.RecordPayment(targetStatus, recurringPayment.Currency);
 
                 logger.LogInformation(
                     "Recurring payment created {PaymentId} shop {ShopId} method {PaymentMethodId} correlation {CorrelationId}",
@@ -1011,6 +1016,7 @@ public static class PaymentsEndpoints
             }
 
             await unitOfWork.SaveChangesAsync(ct);
+            metricsRecorder?.RecordPayment(payment.Status, payment.Currency);
 
             logger.LogInformation(
                 "Payment created {PaymentId} shop {ShopId} correlation {CorrelationId}",

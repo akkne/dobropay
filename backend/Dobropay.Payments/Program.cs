@@ -2,6 +2,7 @@ using Dobropay.Contracts.Constants;
 using Dobropay.Contracts.Security;
 using Dobropay.Messaging.Database;
 using Dobropay.Messaging.Kafka;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Messaging.Security;
 using Dobropay.Payments.Api;
 using Dobropay.Payments.Domain;
@@ -36,6 +37,7 @@ var reconciliationOptions = new ReconciliationOptions
 
 builder.Services.AddSingleton(options);
 builder.Services.AddSingleton(reconciliationOptions);
+builder.Services.AddDobropayMetrics();
 builder.Services.AddPostgresDbContext<PaymentsDbContext>(builder.Configuration);
 builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddInternalSecurity(builder.Configuration);

@@ -3,6 +3,7 @@ using Dobropay.Contracts.Constants;
 using Dobropay.Contracts.Events;
 using Dobropay.Contracts.Versioning;
 using Dobropay.Messaging.Kafka;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Messaging.Redis;
 using Dobropay.Notifications.Persistence;
 using Dobropay.Notifications.Webhooks;
@@ -16,7 +17,8 @@ public sealed class NotificationWorker(
     IRateLimiter rateLimiter,
     IWebhookSignatureService signatureService,
     IHttpClientFactory httpClientFactory,
-    ILogger<NotificationWorker> logger) : BackgroundService
+    ILogger<NotificationWorker> logger,
+    IMetricsRecorder? metricsRecorder = null) : BackgroundService
 {
     private const int ReceiveTimeoutMilliseconds = 100;
     private const int CycleDelayMilliseconds = 500;
@@ -114,6 +116,7 @@ public sealed class NotificationWorker(
             var allowed = await rateLimiter.TryAcquireAsync(rateLimitKey, TimeSpan.FromSeconds(RateLimitWindowSeconds));
             if (!allowed)
             {
+                metricsRecorder?.RecordWebhookDeliveryFailure(NotificationsSchemaConstants.ResultRateLimited);
                 await repository.DeferDeliveryAsync(lease.DeliveryId, NotificationsSchemaConstants.ResultRateLimited, cancellationToken);
                 return;
             }
@@ -137,12 +140,18 @@ public sealed class NotificationWorker(
         }
         catch (RedisConnectionException)
         {
+            metricsRecorder?.RecordWebhookDeliveryFailure(NotificationsSchemaConstants.ResultRedisUnavailable);
             await repository.DeferDeliveryAsync(lease.DeliveryId, NotificationsSchemaConstants.ResultRedisUnavailable, cancellationToken);
             return;
         }
         catch (Exception exception)
         {
             outcome = exception.GetType().Name;
+        }
+
+        if (outcome != NotificationsSchemaConstants.ResultDelivered)
+        {
+            metricsRecorder?.RecordWebhookDeliveryFailure(outcome);
         }
 
         await repository.CompleteDeliveryAttemptAsync(

@@ -1,6 +1,7 @@
 using Dobropay.Contracts.Constants;
 using Dobropay.Messaging.Database;
 using Dobropay.Messaging.Kafka;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Messaging.Redis;
 using Dobropay.Messaging.Security;
 using Dobropay.Notifications.Api;
@@ -24,6 +25,7 @@ var options = new NotificationsOptions
 };
 
 builder.Services.AddSingleton(options);
+builder.Services.AddDobropayMetrics();
 builder.Services.AddPostgresDbContext<NotificationsDbContext>(builder.Configuration);
 builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddRedisRateLimiting(builder.Configuration);

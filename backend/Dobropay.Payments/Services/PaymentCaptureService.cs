@@ -4,6 +4,7 @@ using Dobropay.Contracts.Events;
 using Dobropay.Contracts.Security;
 using Dobropay.Contracts.Versioning;
 using Dobropay.Messaging.Database;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Payments.Domain;
 using Dobropay.Payments.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,8 @@ namespace Dobropay.Payments.Services;
 public sealed class PaymentCaptureService(
     IPaymentsRepository repository,
     IUnitOfWork unitOfWork,
-    IHashProvider hashProvider) : IPaymentCaptureService
+    IHashProvider hashProvider,
+    IMetricsRecorder? metricsRecorder = null) : IPaymentCaptureService
 {
     public async Task<PaymentOperationResult> CaptureAsync(
         Guid shopId,
@@ -103,6 +105,7 @@ public sealed class PaymentCaptureService(
             await repository.AddIdempotencyRecordAsync(idempotencyRecord, cancellationToken);
             await repository.AddOutboxEventAsync(outboxEvent, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            metricsRecorder?.RecordPayment(payment.Status, payment.Currency);
             return new PaymentOperationResult(PaymentOperationOutcome.Success, MapView(payment));
         }
         catch (DbUpdateException exception)
@@ -216,6 +219,7 @@ public sealed class PaymentCaptureService(
             await repository.AddIdempotencyRecordAsync(idempotencyRecord, cancellationToken);
             await repository.AddOutboxEventAsync(outboxEvent, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            metricsRecorder?.RecordPayment(payment.Status, payment.Currency);
             return new PaymentOperationResult(PaymentOperationOutcome.Success, MapView(payment));
         }
         catch (DbUpdateException exception)

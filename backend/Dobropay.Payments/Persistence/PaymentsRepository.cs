@@ -129,6 +129,11 @@ public sealed class PaymentsRepository(PaymentsDbContext dbContext) : IPaymentsR
             .OrderBy(x => x.OccurredAt)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<long> CountUnpublishedOutboxAsync(CancellationToken cancellationToken) =>
+        dbContext.OutboxEvents
+            .Where(x => !x.Published)
+            .LongCountAsync(cancellationToken);
+
     public Task<ProviderInbox?> FindTrackedInboxAsync(
         Guid inboxId,
         Guid shopId,

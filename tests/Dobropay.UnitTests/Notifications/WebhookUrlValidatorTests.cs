@@ -96,6 +96,18 @@ public sealed class WebhookUrlValidatorTests
     }
 
     [Theory]
+    [InlineData("https://localhost/webhook")]
+    [InlineData("https://localhost:8443/webhook")]
+    public async Task ValidateUrlAsync_BlocksLocalhostHostname_WhenSandboxDisabled(string url)
+    {
+        var validator = CreateValidator(sandboxEnabled: false);
+
+        var result = await validator.ValidateUrlAsync(url, CancellationToken.None);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Theory]
     [InlineData("http://localhost:8080/local/webhooks/receiver")]
     [InlineData("http://127.0.0.1:8080/local/webhooks/receiver")]
     [InlineData("http://notifications:8080/local/webhooks/receiver")]

@@ -1,4 +1,5 @@
 using Dobropay.Contracts.Constants;
+using Dobropay.Messaging.Metrics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,7 +16,8 @@ public static class KafkaServiceCollectionExtensions
 
         var options = new KafkaOptions { BootstrapServers = bootstrapServers };
         services.AddSingleton(options);
-        services.AddSingleton<IKafkaClientFactory>(new KafkaClientFactory(options.BootstrapServers));
+        services.AddSingleton<IKafkaClientFactory>(provider =>
+            new KafkaClientFactory(options.BootstrapServers, provider.GetService<IMetricsRecorder>()));
         services.AddSingleton<IEventPublisher>(provider => provider.GetRequiredService<IKafkaClientFactory>().CreatePublisher());
         return services;
     }
