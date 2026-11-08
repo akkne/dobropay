@@ -275,5 +275,7 @@ public sealed class PaymentCaptureService(
             payment.ConfirmationType,
             payment.ConfirmationData,
             payment.SavePaymentMethod,
-            payment.SavedPaymentMethodId);
+            payment.SavedPaymentMethodId,
+            payment.CreatedAt,
+            payment.UpdatedAt);
 }
