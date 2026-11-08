@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Dobropay.UnitTests;
 
+[Collection("MetricsRecorderTests")]
 public sealed class MetricsRecorderTests : IDisposable
 {
     private readonly OpenTelemetryMetricsRecorder recorder = new();
@@ -64,6 +65,7 @@ public sealed class MetricsRecorderTests : IDisposable
     {
         using var meterListener = new MeterListener();
         var capturedMeasurements = new List<(string InstrumentName, long Value, Dictionary<string, object?> Tags)>();
+        var syncLock = new object();
 
         meterListener.InstrumentPublished = (instrument, listener) =>
         {
@@ -81,38 +83,46 @@ public sealed class MetricsRecorderTests : IDisposable
                 dict[tag.Key] = tag.Value;
             }
 
-            capturedMeasurements.Add((instrument.Name, measurement, dict));
+            lock (syncLock)
+            {
+                capturedMeasurements.Add((instrument.Name, measurement, dict));
+            }
         });
 
         meterListener.Start();
 
-        recorder.RecordPayment("succeeded", "RUB");
-        recorder.RecordWebhookDeliveryFailure("rate_limited");
-        recorder.RecordOutboxPendingCount(15);
-        recorder.RecordKafkaConsumerLag("events-topic", "test-group", 7);
+        using var localRecorder = new OpenTelemetryMetricsRecorder();
+
+        localRecorder.RecordPayment("succeeded", "RUB");
+        localRecorder.RecordWebhookDeliveryFailure("rate_limited");
+        localRecorder.RecordOutboxPendingCount(15);
+        localRecorder.RecordKafkaConsumerLag("events-topic", "test-group", 7);
 
         meterListener.RecordObservableInstruments();
 
-        Assert.Contains(capturedMeasurements, m =>
-            m.InstrumentName == MetricNames.PaymentsTotal &&
-            m.Value == 1 &&
-            (string?)m.Tags["status"] == "succeeded" &&
-            (string?)m.Tags["currency"] == "RUB");
+        lock (syncLock)
+        {
+            Assert.Contains(capturedMeasurements, m =>
+                m.InstrumentName == MetricNames.PaymentsTotal &&
+                m.Value == 1 &&
+                (string?)m.Tags["status"] == "succeeded" &&
+                (string?)m.Tags["currency"] == "RUB");
 
-        Assert.Contains(capturedMeasurements, m =>
-            m.InstrumentName == MetricNames.WebhookDeliveryFailuresTotal &&
-            m.Value == 1 &&
-            (string?)m.Tags["reason"] == "rate_limited");
+            Assert.Contains(capturedMeasurements, m =>
+                m.InstrumentName == MetricNames.WebhookDeliveryFailuresTotal &&
+                m.Value == 1 &&
+                (string?)m.Tags["reason"] == "rate_limited");
 
-        Assert.Contains(capturedMeasurements, m =>
-            m.InstrumentName == MetricNames.OutboxPendingCount &&
-            m.Value == 15);
+            Assert.Contains(capturedMeasurements, m =>
+                m.InstrumentName == MetricNames.OutboxPendingCount &&
+                m.Value == 15);
 
-        Assert.Contains(capturedMeasurements, m =>
-            m.InstrumentName == MetricNames.KafkaConsumerLag &&
-            m.Value == 7 &&
-            (string?)m.Tags["topic"] == "events-topic" &&
-            (string?)m.Tags["consumer_group"] == "test-group");
+            Assert.Contains(capturedMeasurements, m =>
+                m.InstrumentName == MetricNames.KafkaConsumerLag &&
+                m.Value == 7 &&
+                (string?)m.Tags["topic"] == "events-topic" &&
+                (string?)m.Tags["consumer_group"] == "test-group");
+        }
     }
 
     [Fact]
