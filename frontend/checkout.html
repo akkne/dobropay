@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оплата заказа — Dobropay Hosted Checkout</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/checkout.css">
+</head>
+<body class="checkout-page">
+
+  <div class="checkout-wrapper">
+    <!-- Top Header -->
+    <header class="checkout-header">
+      <div class="checkout-brand">
+        <span class="brand-mark"></span>
+        <span>dobropay</span>
+      </div>
+      <div id="checkout-timer-badge" class="checkout-timer-badge" title="Время действия ссылки на оплату">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span id="checkout-timer">29:45</span>
+      </div>
+    </header>
+
+    <!-- Main Checkout Card -->
+    <main class="checkout-card">
+      <!-- Order Summary -->
+      <section class="order-summary">
+        <div class="order-shop-row">
+          <span id="shop-name" class="order-shop-name">Магазин мерча Dobropay</span>
+          <span id="order-id" class="order-order-id">Заказ №1042</span>
+        </div>
+        <div class="order-amount-label">К оплате</div>
+        <div id="order-amount" class="order-amount-val">1 299,00 ₽</div>
+      </section>
+
+      <!-- Active Payment Interface -->
+      <div id="checkout-main-panel">
+        <!-- Payment Methods Tabs -->
+        <nav class="method-tabs" aria-label="Способы оплаты">
+          <button type="button" class="method-tab active" data-method="sbp">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>СБП (QR)</span>
+          </button>
+          <button type="button" class="method-tab" data-method="bank_card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>Карта</span>
+          </button>
+          <button type="button" class="method-tab" data-method="crypto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.5 9h5a2.5 2.5 0 0 1 0 5H9.5"></path>
+              <path d="M9.5 14h5.5a2.5 2.5 0 0 1 0 5H9.5"></path>
+              <line x1="12" y1="6" x2="12" y2="9"></line>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+            <span>Крипта</span>
+          </button>
+        </nav>
+
+        <!-- Method Panels -->
+        <!-- 1. SBP Panel -->
+        <section id="panel-sbp" class="method-panel active" aria-labelledby="tab-sbp">
+          <div class="sbp-panel-content">
+            <div class="sbp-logo-badge">
+              <svg width="18" height="18" viewBox="0 0 32 32">
+                <polygon points="16,2 30,28 2,28" fill="#F59ACC" stroke="#09318D" stroke-width="2"/>
+                <polygon points="16,9 25,25 7,25" fill="#09318D"/>
+              </svg>
+              <span>Система быстрых платежей</span>
+            </div>
+
+            <div class="sbp-qr-wrapper">
+              <div id="sbp-qr-code"></div>
+            </div>
+
+            <p class="sbp-instruction">
+              Отсканируйте QR-код в приложении любого банка или камерой смартфона для мгновенной оплаты без комиссии
+            </p>
+
+            <button type="button" id="sbp-deeplink-btn" class="button primary full lg">
+              Открыть в приложении банка
+            </button>
+
+            <div class="sbp-pulse-indicator">
+              <span class="pulse-dot"></span>
+              <span>Ожидаем подтверждения оплаты банком...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Bank Card Panel -->
+        <section id="panel-bank_card" class="method-panel" aria-labelledby="tab-card">
+          <form id="card-payment-form">
+            <div class="form-group">
+              <label class="form-label" for="card-number">Номер карты</label>
+              <div class="card-input-wrapper">
+                <input
+                  type="text"
+                  id="card-number"
+                  class="form-input mono"
+                  placeholder="2200 0000 0000 0000"
+                  maxlength="23"
+                  autocomplete="cc-number"
+                  required
+                />
+                <div id="card-brand-display" class="card-brand-icon">
+                  <span class="badge neutral" style="font-size:11px;">КАРТА</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-grid-row">
+              <div class="form-group">
+                <label class="form-label" for="card-expiry">Срок действия</label>
+                <input
+                  type="text"
+                  id="card-expiry"
+                  class="form-input mono"
+                  placeholder="ММ/ГГ"
+                  maxlength="5"
+                  autocomplete="cc-exp"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="card-cvv">Код CVC / CVV</label>
+                <input
+                  type="password"
+                  id="card-cvv"
+                  class="form-input mono"
+                  placeholder="•••"
+                  maxlength="4"
+                  autocomplete="cc-csc"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 4px; margin-bottom: 22px;">
+              <label class="toggle-row">
+                <input type="checkbox" id="save-card-toggle" class="toggle-checkbox" checked />
+                <span>Сохранить карту для быстрых покупок в один клик</span>
+              </label>
+            </div>
+
+            <button type="submit" class="button primary full lg">
+              Оплатить <span id="card-pay-btn-amount">1 299,00 ₽</span>
+            </button>
+
+            <div class="card-secure-notice">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Безопасная оплата с поддержкой 3-D Secure и шифрованием TLS</span>
+            </div>
+          </form>
+        </section>
+
+        <!-- 3. Crypto Panel -->
+        <section id="panel-crypto" class="method-panel" aria-labelledby="tab-crypto">
+          <div class="crypto-network-pills">
+            <button type="button" class="network-pill active" data-network="USDT_TRC20">USDT (TRC-20)</button>
+            <button type="button" class="network-pill" data-network="TON">TON</button>
+            <button type="button" class="network-pill" data-network="BTC">Bitcoin</button>
+          </div>
+
+          <div class="crypto-rate-box">
+            <div>
+              <div style="color: rgba(9, 49, 141, 0.65); font-size: 11px; text-transform: uppercase;">Сумма перевода</div>
+              <div id="crypto-amount-text" class="crypto-amount-large">13.3367 USDT</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="color: rgba(9, 49, 141, 0.65); font-size: 11px;">Курс конвертации</div>
+              <div id="crypto-rate-text" style="font-weight: 600; color: var(--blue);">1 USDT ≈ 97,40 ₽</div>
+            </div>
+          </div>
+
+          <div class="crypto-address-box">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <span class="form-label">Адрес кошелька для депозита</span>
+              <button type="button" id="copy-crypto-address-btn" class="button ghost sm">Скопировать</button>
+            </div>
+            <div class="crypto-address-field">
+              <span id="crypto-address-text" class="crypto-address-text">TXjS51QoP8iBhykLw9mYfR79r42XN8yFkM</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center; margin: 12px 0;">
+            <div class="sbp-qr-wrapper" style="padding: 12px;">
+              <div id="crypto-qr-code"></div>
+            </div>
+          </div>
+
+          <div class="confirmations-tracker">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 550;">
+              <span>Статус сети</span>
+              <span id="crypto-confirmations-label" style="color: var(--blue);">1 из 3 подтверждений</span>
+            </div>
+            <div class="progress-bar">
+              <div id="crypto-progress-bar" class="progress-bar-fill" style="width: 33%;"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Outcome Panel (Shown when status is resolved) -->
+      <div id="checkout-outcome-panel" style="display: none;">
+        <!-- Succeeded View -->
+        <div id="outcome-succeeded" class="checkout-status-screen" style="display: none;">
+          <div class="status-icon-circle success">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h2 class="status-title">Оплата прошла успешно!</h2>
+          <p class="status-description">Средства зачислены магазину. Чек сформирован и отправлен вам на email.</p>
+
+          <div class="status-details-box">
+            <div class="status-row">
+              <span>Номер операции:</span>
+              <span id="succ-tx-id" class="mono">tx-99a1b2c3</span>
+            </div>
+            <div class="status-row">
+              <span>Способ оплаты:</span>
+              <span id="succ-method">СБП</span>
+            </div>
+            <div class="status-row">
+              <span>Сумма:</span>
+              <span id="succ-amount">1 299,00 ₽</span>
+            </div>
+            <div class="status-row">
+              <span>Дата и время:</span>
+              <span id="succ-date">08.11.2026, 10:20:15</span>
+            </div>
+          </div>
+
+          <div class="status-actions">
+            <button type="button" id="view-receipt-btn" class="button primary full lg">
+              Посмотреть электронный чек
+            </button>
+            <a href="index.html" class="button outline full">
+              Вернуться в магазин
+            </a>
+          </div>
+        </div>
+
+        <!-- Waiting For Capture (Hold) View -->
+        <div id="outcome-waiting" class="checkout-status-screen" style="display: none;">
+          <div class="status-icon-circle" style="background: var(--amber-blush); color: var(--amber);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <h2 class="status-title">Средства захолдированы</h2>
+          <p class="status-description">Сумма заморожена на карте. Магазин подтвердит списание после сборки заказа.</p>
+
+          <div class="status-details-box">
+            <div class="status-row">
+              <span>Статус:</span>
+              <span class="badge pending">Ожидает списания (Hold)</span>
+            </div>
+            <div class="status-row">
+              <span>Замороженная сумма:</span>
+              <span id="wait-amount">1 299,00 ₽</span>
+            </div>
+            <div class="status-row">
+              <span>Время холда:</span>
+              <span id="wait-date">08.11.2026, 10:25:00</span>
+            </div>
+          </div>
+
+          <div class="status-actions">
+            <a href="index.html" class="button primary full lg">Вернуться в магазин</a>
+          </div>
+        </div>
+
+        <!-- Canceled View -->
+        <div id="outcome-canceled" class="checkout-status-screen" style="display: none;">
+          <div class="status-icon-circle canceled">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <h2 class="status-title">Оплата не завершена</h2>
+          <p id="canc-reason" class="status-description">Операция была отклонена банком или отменена.</p>
+
+          <div class="status-actions">
+            <button type="button" id="retry-payment-btn" class="button primary full lg">
+              Попробовать снова
+            </button>
+            <a href="index.html" class="button outline full">
+              Отменить и вернуться
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 3-D Secure Modal Simulation -->
+  <div id="modal-3ds" class="modal-overlay">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <button class="modal-close" id="cancel-3ds-btn">&times;</button>
+      <div style="display: flex; justify-content: center; margin-bottom: 14px;">
+        <span class="badge neutral" style="font-size: 13px; font-weight: 700;">3-D SECURE 2.0</span>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 700; color: var(--blue); margin-bottom: 8px;">Подтверждение платежа</h3>
+      <p style="font-size: 14px; color: rgba(9, 49, 141, 0.7); margin-bottom: 20px;">
+        Банк-эмитент отправил проверочный SMS-код на ваш привязанный номер телефона +7 (•••) •••-42-10
+      </p>
+
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label" for="sms-code">Код из SMS (для теста: любой или 1234)</label>
+        <input type="text" id="sms-code" class="form-input mono" placeholder="1234" maxlength="6" value="1234" autofocus />
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="button" id="submit-3ds-btn" class="button primary full lg">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Electronic Receipt Modal Preview (DESIGN.md .receipt spec) -->
+  <div id="modal-receipt" class="modal-overlay">
+    <div class="modal-card" style="max-width: 440px; padding: 20px;">
+      <button class="modal-close">&times;</button>
+      
+      <div class="receipt-preview">
+        <div class="receipt-head">
+          <div class="brand" style="font-size: 20px;">
+            <span class="brand-mark"></span>
+            <span>dobropay</span>
+          </div>
+          <span class="receipt-status-badge">Оплачено</span>
+        </div>
+
+        <div class="receipt-title">Чек · Заказ №<span id="receipt-order-no">1042</span></div>
+
+        <dl class="receipt-dl">
+          <div class="receipt-dl-row">
+            <dt>Магазин</dt>
+            <dd>ООО «Добропей Диджитал»</dd>
+          </div>
+          <div class="receipt-dl-row">
+            <dt>ИНН</dt>
+            <dd class="mono">7707083893</dd>
+          </div>
+          <div class="receipt-dl-row">
+            <dt>Способ</dt>
+            <dd id="receipt-method">СБП</dd>
+          </div>
+          <div class="receipt-dl-row">
+            <dt>Дата</dt>
+            <dd id="receipt-date" class="mono">08.11.2026, 10:20:15</dd>
+          </div>
+          <div class="receipt-dl-row">
+            <dt>Фискальный накопитель (ФН)</dt>
+            <dd class="mono">9999078900012345</dd>
+          </div>
+          <div class="receipt-dl-row">
+            <dt>ФД / ФПД</dt>
+            <dd class="mono">4021 / 3948572019</dd>
+          </div>
+        </dl>
+
+        <div class="receipt-total-row">
+          <span style="font-size: 15px; font-weight: 550; color: rgba(9, 49, 141, 0.7);">Итого</span>
+          <strong id="receipt-amount">1 299,00 ₽</strong>
+        </div>
+
+        <div class="receipt-demo-note">Электронный кассовый чек по 54-ФЗ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sandbox Floating Simulator Bar -->
+  <aside class="sandbox-bar" aria-label="Панель песочницы разработчика">
+    <div class="sandbox-bar-title">
+      <span class="sandbox-chip">Sandbox</span>
+      <span>Симулятор провайдера и платежей</span>
+    </div>
+    <div class="sandbox-actions">
+      <button type="button" id="sim-success-btn" class="sandbox-btn success" title="Симулировать успешную оплату">
+        ✓ Успех (Succeeded)
+      </button>
+      <button type="button" id="sim-hold-btn" class="sandbox-btn warning" title="Симулировать холд суммы">
+        ⏱ Холд (WaitingForCapture)
+      </button>
+      <button type="button" id="sim-cancel-btn" class="sandbox-btn danger" title="Симулировать отказ">
+        ✕ Отказ (Canceled)
+      </button>
+      <button type="button" id="sim-reset-btn" class="sandbox-btn" title="Сбросить в исходное состояние">
+        ↺ Сбросить
+      </button>
+    </div>
+  </aside>
+
+  <!-- Scripts -->
+  <script type="module" src="assets/js/checkout.js"></script>
+</body>
+</html>
