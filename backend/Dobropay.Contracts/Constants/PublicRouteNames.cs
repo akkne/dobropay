@@ -3,6 +3,15 @@ namespace Dobropay.Contracts.Constants;
 public static class PublicRouteNames
 {
     public const string AuthLogin = "/v1/auth/login";
+    public const string AuthRegister = "/v1/auth/register";
+    public const string AuthRefresh = "/v1/auth/refresh";
+    public const string AuthLogout = "/v1/auth/logout";
+    public const string AuthMe = "/v1/auth/me";
+    public const string DeveloperShops = "/v1/developer/shops";
+    public const string DeveloperShopOnboarding = "/v1/developer/shops/{shopId:guid}/onboarding";
+    public const string DeveloperShopOnboardingSubmit = "/v1/developer/shops/{shopId:guid}/onboarding/submit";
+    public const string DeveloperShopKeys = "/v1/developer/shops/{shopId:guid}/keys";
+    public const string DeveloperShopKeyDelete = "/v1/developer/shops/{shopId:guid}/keys/{keyId:guid}";
     public const string DeveloperCreateShopKey = "/v1/developer/shops/{shopId:guid}/keys";
     public const string DeveloperConfigureWebhook = "/v1/developer/shops/{shopId:guid}/webhooks";
     public const string Payments = "/v1/payments";
@@ -33,6 +42,7 @@ public static class PublicRouteNames
     public const string AdminShopPaymentRefunds = "/v1/admin/shops/{shopId:guid}/payments/{id:guid}/refunds";
     public const string AdminShopRefunds = "/v1/admin/shops/{shopId:guid}/refunds";
     public const string AdminShopDeliveries = "/v1/admin/shops/{shopId:guid}/deliveries";
+    public const string AdminDeliveryRetry = "/v1/admin/shops/{shopId:guid}/deliveries/{deliveryId:guid}/retry";
     public const string AdminShopReceipts = "/v1/admin/shops/{shopId:guid}/receipts";
     public const string ReceiptsLookup = "/v1/receipts/lookup";
     public const string ReceiptById = "/v1/receipts/{id:guid}";

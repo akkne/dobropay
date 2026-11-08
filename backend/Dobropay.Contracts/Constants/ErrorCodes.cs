@@ -22,4 +22,18 @@ public static class ErrorCodes
     public const string InvalidReceipt = "invalid_receipt";
     public const string ReceiptNotFound = "receipt_not_found";
     public const string ReceiptLookupQueryRequired = "receipt_lookup_query_required";
+    public const string EmailAlreadyExists = "email_already_exists";
+    public const string InvalidCredentials = "invalid_credentials";
+    public const string InvalidToken = "invalid_token";
+    public const string InvalidEmail = "invalid_email";
+    public const string InvalidPassword = "invalid_password";
+    public const string InvalidPayload = "invalid_payload";
+    public const string ShopNotFound = "shop_not_found";
+    public const string Forbidden = "forbidden";
+    public const string InvalidOnboardingProfile = "invalid_onboarding_profile";
+    public const string OnboardingNotApproved = "onboarding_not_approved";
+    public const string OnboardingAlreadyApproved = "onboarding_already_approved";
+    public const string OnboardingUnderReview = "onboarding_under_review";
+    public const string KeyNotFound = "key_not_found";
+    public const string InvalidKeyMode = "invalid_key_mode";
 }

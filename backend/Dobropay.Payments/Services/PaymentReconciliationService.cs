@@ -3,6 +3,7 @@ using Dobropay.Contracts.Constants;
 using Dobropay.Contracts.Events;
 using Dobropay.Contracts.Versioning;
 using Dobropay.Messaging.Database;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Payments.Domain;
 using Dobropay.Payments.Persistence;
 
@@ -12,7 +13,8 @@ public sealed class PaymentReconciliationService(
     IPaymentsRepository repository,
     IPaymentProviderRouter providerRouter,
     IUnitOfWork unitOfWork,
-    ReconciliationOptions options) : IPaymentReconciliationService
+    ReconciliationOptions options,
+    IMetricsRecorder? metricsRecorder = null) : IPaymentReconciliationService
 {
     private const int BatchLimit = 50;
 
@@ -91,6 +93,8 @@ public sealed class PaymentReconciliationService(
                             Published = false
                         },
                         cancellationToken);
+
+                    metricsRecorder?.RecordPayment(targetStatus, payment.Currency);
                 }
             }
 
@@ -151,6 +155,8 @@ public sealed class PaymentReconciliationService(
                     Published = false
                 },
                 cancellationToken);
+
+            metricsRecorder?.RecordPayment(payment.Status, payment.Currency);
         }
 
         if (expiredPayments.Count > 0)

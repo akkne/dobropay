@@ -11,4 +11,7 @@ public static class AuthSchemaConstants
     public const string TokenHashColumn = "token_hash";
     public const string AccountIdColumn = "account_id";
     public const string ExpiresAtColumn = "expires_at";
+    public const string RefreshTokenHashColumn = "refresh_token_hash";
+    public const string RefreshExpiresAtColumn = "refresh_expires_at";
+    public const string IsRevokedColumn = "is_revoked";
 }

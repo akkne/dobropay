@@ -1,5 +1,7 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Dobropay.Contracts.Constants;
+using Dobropay.Contracts.Events;
 using Dobropay.Notifications.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +22,76 @@ public sealed class NotificationsRepository(NotificationsDbContext dbContext) : 
             .Where(x => x.ShopId == shopId)
             .Select(x => new WebhookDeliveryView(x.EventId, x.State, x.Attempts, x.LastResult))
             .ToListAsync(cancellationToken);
+
+    public async Task<bool> RetryDeliveryAsync(
+        Guid shopId,
+        Guid deliveryId,
+        CancellationToken cancellationToken)
+    {
+        var delivery = await dbContext.WebhookDeliveries
+            .SingleOrDefaultAsync(x => x.Id == deliveryId && x.ShopId == shopId, cancellationToken);
+        if (delivery is null)
+        {
+            return false;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        delivery.State = NotificationsSchemaConstants.StatePending;
+        delivery.NextAt = now;
+        delivery.LockedUntil = null;
+        delivery.Attempts = 0;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<WebhookSubscription> SaveSubscriptionAsync(
+        Guid shopId,
+        string url,
+        string? signingSecret,
+        IReadOnlyList<string>? eventTypes,
+        CancellationToken cancellationToken)
+    {
+        var subscription = await dbContext.WebhookSubscriptions
+            .SingleOrDefaultAsync(x => x.ShopId == shopId, cancellationToken);
+
+        var eventTypesString = eventTypes is { Count: > 0 }
+            ? string.Join(",", eventTypes.Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)))
+            : null;
+
+        if (subscription is null)
+        {
+            subscription = new WebhookSubscription
+            {
+                Id = Guid.NewGuid(),
+                ShopId = shopId,
+                Url = url,
+                SigningSecret = !string.IsNullOrWhiteSpace(signingSecret)
+                    ? signingSecret
+                    : Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant(),
+                EventTypes = eventTypesString
+            };
+            await dbContext.WebhookSubscriptions.AddAsync(subscription, cancellationToken);
+        }
+        else
+        {
+            subscription.Url = url;
+            if (!string.IsNullOrWhiteSpace(signingSecret))
+            {
+                subscription.SigningSecret = signingSecret;
+            }
+            subscription.EventTypes = eventTypesString;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return subscription;
+    }
+
+    public async Task<WebhookSubscription?> GetSubscriptionByShopAsync(
+        Guid shopId,
+        CancellationToken cancellationToken) =>
+        await dbContext.WebhookSubscriptions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.ShopId == shopId, cancellationToken);
 
     public async Task SaveIncomingPaymentEventAsync(
         Guid eventId,
@@ -48,6 +120,16 @@ public sealed class NotificationsRepository(NotificationsDbContext dbContext) : 
             },
             cancellationToken);
 
+        string? eventType = null;
+        try
+        {
+            var envelope = JsonSerializer.Deserialize<EventEnvelope>(rawEnvelope);
+            eventType = envelope?.EventType;
+        }
+        catch (JsonException)
+        {
+        }
+
         var subscriptions = await dbContext.WebhookSubscriptions
             .AsNoTracking()
             .Where(x => x.ShopId == shopId)
@@ -55,6 +137,11 @@ public sealed class NotificationsRepository(NotificationsDbContext dbContext) : 
 
         foreach (var subscription in subscriptions)
         {
+            if (!subscription.MatchesEventType(eventType))
+            {
+                continue;
+            }
+
             await dbContext.WebhookDeliveries.AddAsync(
                 new WebhookDelivery
                 {

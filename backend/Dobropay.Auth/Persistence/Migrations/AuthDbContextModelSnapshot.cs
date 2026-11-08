@@ -66,9 +66,24 @@ namespace Dobropay.Auth.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
+
+                    b.Property<DateTimeOffset>("RefreshExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refresh_expires_at");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("refresh_token_hash");
+
                     b.HasKey("TokenHash");
 
                     b.HasIndex("AccountId");
+
+                    b.HasIndex("RefreshTokenHash");
 
                     b.ToTable("staff_sessions", (string)null);
                 });

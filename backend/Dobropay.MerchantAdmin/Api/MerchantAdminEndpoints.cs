@@ -120,6 +120,18 @@ public static class MerchantAdminEndpoints
                 InternalRouteNames.DeliveriesSuffix,
                 ct));
 
+        app.MapPost(PublicRouteNames.AdminDeliveryRetry, (
+            HttpContext http,
+            Guid shopId,
+            Guid deliveryId,
+            IMerchantAdminGatewayService gatewayService,
+            CancellationToken ct) =>
+            gatewayService.RetryDeliveryAsync(
+                http.Request.Headers.Authorization.ToString(),
+                shopId,
+                deliveryId,
+                ct));
+
         app.MapGet(PublicRouteNames.AdminShopReceipts, (
             HttpContext http,
             Guid shopId,

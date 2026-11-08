@@ -4,6 +4,7 @@ using Dobropay.Contracts.Events;
 using Dobropay.Contracts.Versioning;
 using Dobropay.Messaging.Database;
 using Dobropay.Messaging.Kafka;
+using Dobropay.Messaging.Metrics;
 using Dobropay.Payments.Domain;
 using Dobropay.Payments.Persistence;
 
@@ -13,7 +14,8 @@ public sealed class PaymentEventWorker(
     IServiceScopeFactory scopeFactory,
     IKafkaClientFactory kafkaClientFactory,
     IEventPublisher publisher,
-    ILogger<PaymentEventWorker> logger) : BackgroundService
+    ILogger<PaymentEventWorker> logger,
+    IMetricsRecorder? metricsRecorder = null) : BackgroundService
 {
     private const int ReceiveTimeoutMilliseconds = 100;
     private const int CycleDelayMilliseconds = 500;
@@ -52,6 +54,9 @@ public sealed class PaymentEventWorker(
         var repository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
+        var pendingCount = await repository.CountUnpublishedOutboxAsync(cancellationToken);
+        metricsRecorder?.RecordOutboxPendingCount(pendingCount);
+
         var nextEvent = await repository.FindNextUnpublishedOutboxAsync(cancellationToken);
         if (nextEvent is null)
         {
@@ -67,6 +72,9 @@ public sealed class PaymentEventWorker(
         await publisher.PublishAsync(nextEvent.Topic, envelope, cancellationToken);
         nextEvent.Published = true;
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var remainingCount = Math.Max(0, pendingCount - 1);
+        metricsRecorder?.RecordOutboxPendingCount(remainingCount);
 
         logger.LogInformation(
             "Published event {EventId} payment {PaymentId} shop {ShopId} correlation {CorrelationId}",
@@ -150,6 +158,7 @@ public sealed class PaymentEventWorker(
             payment.Status = targetStatus;
             payment.UpdatedAt = now;
             attempt.State = incoming.Outcome;
+            metricsRecorder?.RecordPayment(targetStatus, snapshot.Currency);
 
             if (targetStatus == PaymentRules.Succeeded)
             {

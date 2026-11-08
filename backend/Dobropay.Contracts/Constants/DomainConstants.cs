@@ -8,11 +8,18 @@ public static class DomainConstants
     public const string CancelPaymentOperation = "cancel_payment";
     public const string CreateRefundOperation = "create_refund";
     public const string OwnerRole = "owner";
+    public const string AdminRole = "admin";
+    public const string DeveloperRole = "developer";
+    public const string AnalystRole = "analyst";
     public const string ApplicationJsonContentType = "application/json";
     public const string TextHtmlUtf8ContentType = "text/html; charset=utf-8";
     public const string EmptyJsonArray = "[]";
     public const string EmptyJsonObject = "{}";
     public const string ShopApiKeyPrefix = "dp_live_";
+    public const string TestApiKeyPrefix = "dp_test_";
+    public const string LiveApiKeyPrefix = "dp_live_";
+    public const string ApiKeyModeTest = "test";
+    public const string ApiKeyModeLive = "live";
     public const string SimulatorAttemptPrefix = "sim-";
     public const string SimulatorRefundPrefix = "sim-ref-";
     public const string SbpAttemptPrefix = "sbp-";

@@ -130,6 +130,9 @@ public sealed class FakePaymentsRepository : IPaymentsRepository
     public Task<OutboxEvent?> FindNextUnpublishedOutboxAsync(CancellationToken cancellationToken) =>
         Task.FromResult(OutboxEvents.Where(x => !x.Published).OrderBy(x => x.OccurredAt).FirstOrDefault());
 
+    public Task<long> CountUnpublishedOutboxAsync(CancellationToken cancellationToken) =>
+        Task.FromResult((long)OutboxEvents.Count(x => !x.Published));
+
     public Task<ProviderInbox?> FindTrackedInboxAsync(
         Guid inboxId,
         Guid shopId,
