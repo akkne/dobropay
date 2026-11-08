@@ -9,6 +9,7 @@
 - **[docs/code-style.md](docs/code-style.md)** — строгий Code Style (Clean Code без ИИ-артефактов, ООП: сначала абстракция — потом реализация, **один класс — один файл**, никаких магических строк, все секреты и настройки в `.env`);
 - **[docs/git-process.md](docs/git-process.md)** — регламент работы с Git, ветками, коммитами и чистотой рабочего дерева;
 - **[docs/README.md](docs/README.md)** — полная карта документации ([архитектура](docs/architecture.md), [инфраструктура](docs/infrastructure.md), [данные и RLS](docs/data.md), [события Kafka](docs/events.md), [API](docs/api.md), [runbook](docs/runbook.md)).
+- **[docs/prompt-log.md](docs/prompt-log.md)** — журнал запросов, по которым развивался проект; формулировки помечены как сокращённые и частично реконструированные.
 
 ## Архитектура контура (Database-per-Service)
 

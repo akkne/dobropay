@@ -16,6 +16,7 @@
 | [Контракт API](api.md) | Публичные и внутренние маршруты Auth, Developer API, Payments, Checkout, Merchant Admin и исходящих webhook. |
 | [Локальная разработка](local-development.md) | Запуск контура, миграции и проверка RLS под рабочими ролями в изолированных контейнерах БД. |
 | [Runbook](runbook.md) | Практическая диагностика платежей, Kafka lag, сбоев Redis, повторов webhook и писем в Mailpit. |
+| [Журнал промптов](prompt-log.md) | Хронология запросов по проекту по файлу `ai-requests.json`; записи сокращены и частично реконструированы, это не дословная стенограмма. |
 | [Общий Roadmap](roadmap.md) | Сводная дорожная карта проекта и синхронизация этапов Backend и Frontend. |
 | [Roadmap Backend](roadmap-backend.md) | Детальная декомпозиция задач бэкенда по микросервисам, БД (EF Core), абстракциям и контрактам. |
 | [Roadmap Frontend](roadmap-frontend.md) | Детальная декомпозиция задач фронтенда по макету `frontend/docs/DESIGN.md`, Checkout и личному кабинету. |
