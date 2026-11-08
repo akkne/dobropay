@@ -3,6 +3,10 @@ namespace Dobropay.Contracts.Constants;
 public static class PublicRouteNames
 {
     public const string AuthLogin = "/v1/auth/login";
+    public const string AuthRegister = "/v1/auth/register";
+    public const string AuthRefresh = "/v1/auth/refresh";
+    public const string AuthLogout = "/v1/auth/logout";
+    public const string AuthMe = "/v1/auth/me";
     public const string DeveloperCreateShopKey = "/v1/developer/shops/{shopId:guid}/keys";
     public const string DeveloperConfigureWebhook = "/v1/developer/shops/{shopId:guid}/webhooks";
     public const string Payments = "/v1/payments";

@@ -25,7 +25,11 @@ public sealed class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbC
             entity.Property(x => x.TokenHash).HasColumnName(AuthSchemaConstants.TokenHashColumn);
             entity.Property(x => x.AccountId).HasColumnName(AuthSchemaConstants.AccountIdColumn);
             entity.Property(x => x.ExpiresAt).HasColumnName(AuthSchemaConstants.ExpiresAtColumn);
+            entity.Property(x => x.RefreshTokenHash).HasColumnName(AuthSchemaConstants.RefreshTokenHashColumn);
+            entity.Property(x => x.RefreshExpiresAt).HasColumnName(AuthSchemaConstants.RefreshExpiresAtColumn);
+            entity.Property(x => x.IsRevoked).HasColumnName(AuthSchemaConstants.IsRevokedColumn);
             entity.HasOne<Account>().WithMany().HasForeignKey(x => x.AccountId);
+            entity.HasIndex(x => x.RefreshTokenHash);
         });
     }
 }

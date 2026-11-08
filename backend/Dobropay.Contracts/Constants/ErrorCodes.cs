@@ -22,4 +22,9 @@ public static class ErrorCodes
     public const string InvalidReceipt = "invalid_receipt";
     public const string ReceiptNotFound = "receipt_not_found";
     public const string ReceiptLookupQueryRequired = "receipt_lookup_query_required";
+    public const string EmailAlreadyExists = "email_already_exists";
+    public const string InvalidCredentials = "invalid_credentials";
+    public const string InvalidToken = "invalid_token";
+    public const string InvalidEmail = "invalid_email";
+    public const string InvalidPassword = "invalid_password";
 }
