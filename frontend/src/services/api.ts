@@ -91,6 +91,25 @@ export class DobropayApiClient {
     return { id: created.id, name: created.name, status: 'under_review' };
   }
 
+  public async createPayment(apiKey: string, input: { amount: number; externalOrderId: string; paymentMethodType: PaymentMethodType; capture: boolean }): Promise<{ id: string; checkoutUrl: string; status: PaymentStatus }> {
+    const response = await this.request<{ id: string; checkoutUrl?: string; status: string }>('/v1/payments', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': apiKey,
+        'Idempotency-Key': crypto.randomUUID()
+      },
+      body: JSON.stringify({
+        amount: input.amount,
+        currency: 'RUB',
+        externalOrderId: input.externalOrderId,
+        paymentMethodType: input.paymentMethodType,
+        capture: input.capture
+      })
+    });
+    if (!response.checkoutUrl) throw new Error('Платёж создан, но сервер не вернул ссылку оплаты');
+    return { id: response.id, checkoutUrl: response.checkoutUrl, status: response.status as PaymentStatus };
+  }
+
   public async getPayments(shopId: string): Promise<Payment[]> {
     const rows = await this.request<Array<Record<string, any>>>(`/v1/admin/shops/${shopId}/payments`);
     return rows.map(p => ({

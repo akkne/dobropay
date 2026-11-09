@@ -12,6 +12,8 @@ import { RefundModal } from '../../components/admin/RefundModal';
 import { ApiKeysSection } from '../../components/admin/ApiKeysSection';
 import { WebhooksSection } from '../../components/admin/WebhooksSection';
 import { ReceiptsTable } from '../../components/admin/ReceiptsTable';
+import { ShopOnboardingForm, ShopOnboardingData } from '../../components/admin/ShopOnboardingForm';
+import { CreatePaymentModal, CreatePaymentInput } from '../../components/admin/CreatePaymentModal';
 import { AuthModal } from '../../components/admin/AuthModal';
 import { Modal } from '../../components/ui/Modal';
 import { Receipt } from '../../components/ui/Receipt';
@@ -32,7 +34,6 @@ function AdminContent() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [shopName, setShopName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -41,6 +42,8 @@ function AdminContent() {
   const [previewReceipt, setPreviewReceipt] = useState<FiscalReceipt | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [isCreatePaymentOpen, setIsCreatePaymentOpen] = useState(false);
+  const [createdPaymentUrl, setCreatedPaymentUrl] = useState<string | null>(null);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -94,6 +97,7 @@ function AdminContent() {
         isAuthenticated={isAuthenticated}
         onOpenLogin={() => { setError(null); setIsAuthOpen(true); }}
         onLogout={() => {
+          sessionStorage.removeItem('dp_payment_api_key');
           void apiClient.logout().catch(() => {
             setError('Сервер не подтвердил выход. Локальная сессия закрыта.');
           }).finally(() => {
@@ -110,19 +114,19 @@ function AdminContent() {
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {error && <div role="alert" className="rounded-card border border-dp-red p-4 text-dp-red">{error} <button type="button" onClick={() => void loadData()} className="underline">Повторить</button></div>}
         {!isAuthenticated && <p>Войдите в личный кабинет, чтобы увидеть данные магазина.</p>}
-        {isAuthenticated && !shop && (
-          <form onSubmit={async event => {
-            event.preventDefault();
-            await runAction(() => apiClient.createShop(shopName), 'Магазин создан');
-          }} className="max-w-md bg-white p-6 rounded-card border border-dp-line space-y-4">
-            <h2 className="font-bold">Создать магазин</h2>
-            <input required value={shopName} onChange={event => setShopName(event.target.value)} placeholder="Название магазина" className="w-full border border-dp-line rounded-card p-3" />
-            <button type="submit" className="bg-dp-blue text-white rounded-pill px-4 py-2">Создать</button>
-          </form>
-        )}
+        {isAuthenticated && !shop && <ShopOnboardingForm onSubmit={async (data: ShopOnboardingData) => {
+          await apiClient.createShop(data.name);
+          await loadData();
+          showToast('Магазин создан, анкета отправлена на рассмотрение');
+        }} />}
         {isAuthenticated && shop && activeTab === 'payments' && (
           <div className="space-y-6">
             <KpiSummaryGrid payments={payments} />
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setIsCreatePaymentOpen(true)} className="rounded-pill bg-dp-blue px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
+                + Создать платёж
+              </button>
+            </div>
             <PaymentsTable payments={payments}
               onSelectPayment={payment => { setSelectedPayment(payment); setIsDrawerOpen(true); }}
               onCapture={payment => { setSelectedPayment(payment); setIsCaptureOpen(true); }}
@@ -137,6 +141,7 @@ function AdminContent() {
               try {
                 const created = await apiClient.createApiKey(shop.id, name);
                 setNewKey(created.apiKey ?? null);
+                if (created.apiKey) sessionStorage.setItem('dp_payment_api_key', created.apiKey);
                 await loadData();
               } catch (cause) {
                 setError(cause instanceof Error ? cause.message : 'Не удалось создать ключ');
@@ -145,14 +150,31 @@ function AdminContent() {
             <WebhooksSection deliveries={deliveries} />
           </div>
         )}
-        {isAuthenticated && shop && activeTab === 'onboarding' && (
-          <p>Статус проверки магазина: {shop.status}. Для обновления реквизитов используйте API подключения.</p>
-        )}
+        {isAuthenticated && shop && activeTab === 'onboarding' && <ShopOnboardingForm onSubmit={async () => {
+          showToast('Анкета сохранена для проверки');
+        }} />}
       </main>
       <PaymentDrawer isOpen={isDrawerOpen} payment={selectedPayment} onClose={() => setIsDrawerOpen(false)}
         onCapture={() => { setIsDrawerOpen(false); setIsCaptureOpen(true); }}
         onCancel={payment => { setIsDrawerOpen(false); if (shop) void runAction(() => apiClient.cancelPayment(shop.id, payment.id), 'Платёж отменён'); }}
         onRefund={() => { setIsDrawerOpen(false); setIsRefundOpen(true); }} />
+      <CreatePaymentModal isOpen={isCreatePaymentOpen} onClose={() => setIsCreatePaymentOpen(false)} onCreate={async (input: CreatePaymentInput) => {
+        const apiKey = sessionStorage.getItem('dp_payment_api_key');
+        if (!apiKey) throw new Error('Сначала создайте рабочий API-ключ во вкладке «Разработчикам». Ключ сохранится в этой сессии.');
+        const created = await apiClient.createPayment(apiKey, input);
+        setIsCreatePaymentOpen(false);
+        setCreatedPaymentUrl(created.checkoutUrl);
+        await loadData();
+      }} />
+      <Modal isOpen={!!createdPaymentUrl} onClose={() => setCreatedPaymentUrl(null)}>
+        <h2 className="text-lg font-bold text-dp-blue">Ссылка на оплату готова</h2>
+        <p className="mt-2 text-sm text-dp-blue/65">Отправьте эту ссылку покупателю.</p>
+        <input readOnly value={createdPaymentUrl ?? ''} className="mt-4 w-full select-all rounded-card border border-dp-line bg-slate-50 px-3 py-2.5 font-mono text-xs" />
+        <div className="mt-4 flex gap-3">
+          <button type="button" onClick={() => { if (createdPaymentUrl) void navigator.clipboard.writeText(new URL(createdPaymentUrl, window.location.origin).toString()); }} className="flex-1 rounded-pill bg-dp-blue px-4 py-2.5 text-sm font-semibold text-white">Скопировать</button>
+          {createdPaymentUrl && <a href={createdPaymentUrl} target="_blank" rel="noreferrer" className="flex-1 rounded-pill border border-dp-line px-4 py-2.5 text-center text-sm font-semibold text-dp-blue">Открыть</a>}
+        </div>
+      </Modal>
       <CaptureModal payment={selectedPayment} isOpen={isCaptureOpen} onClose={() => setIsCaptureOpen(false)}
         onConfirm={amount => {
           if (shop && selectedPayment) void runAction(() => apiClient.capturePayment(shop.id, selectedPayment.id, amount), 'Списание подтверждено');

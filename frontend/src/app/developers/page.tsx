@@ -102,9 +102,6 @@ export default function DevelopersPage() {
             <p className="docs-lead mt-5 max-w-3xl text-lg leading-8 text-slate-600">
               Единый API для создания и обработки платежей, возвратов и уведомлений о смене статусов.
             </p>
-            <p className="docs-callout mt-6 max-w-3xl border p-4 text-sm leading-6">
-              Сейчас доступен тестовый контур. Боевые платежи будут доступны после подключения реального провайдера.
-            </p>
           </div>
 
           <section id="online" className="docs-section mt-16 scroll-mt-24 border-t border-slate-200 pt-10">
@@ -216,7 +213,7 @@ X-Dobropay-Signature: sha256=<hex>
             <SectionTitle>История изменений</SectionTitle>
             <div className="docs-card rounded-xl border border-slate-200 p-5">
               <p className="text-sm font-semibold text-slate-950">Текущая версия API</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">В тестовом контуре доступны создание и просмотр платежей, подтверждение или отмена списания, возвраты и сохранённые способы оплаты. Методы сервиса платежей опубликованы в спецификации OpenAPI.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">API поддерживает создание и просмотр платежей, подтверждение или отмену списания и возвраты. Контракты методов опубликованы в спецификации OpenAPI.</p>
             </div>
           </section>
 

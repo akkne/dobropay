@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './landing.css';
+import { BusinessSolutionsSection } from '../components/landing/BusinessSolutionsSection';
 
 export const metadata: Metadata = {
   title: 'dobropay — приём платежей через СБП',
@@ -22,14 +23,14 @@ export default function LandingPage() {
         <div className="wrap topbar">
           <Brand />
           <nav className="nav" aria-label="Основное меню">
-            <Link className="nav-home" href="/">Главная</Link>
+            <Link className="nav-home" href="/#home">Главная</Link>
+            <a className="nav-solutions" href="/#solutions">Решения для бизнеса</a>
             <a className="nav-receipts" href="/#receipts">Чеки</a>
             <a className="nav-connect" href="/#connect">Как подключить</a>
             <Link href="/developers">Разработчикам</Link>
           </nav>
           <div className="header-actions">
             <a className="button primary home-action" href="/#connect">Подключить dobropay</a>
-            <a className="button outline home-action" href="/#demo">Посмотреть демо</a>
             <Link className="button login" href="/managing">Войти</Link>
           </div>
         </div>
@@ -141,6 +142,8 @@ export default function LandingPage() {
             </article>
           </div>
         </section>
+
+        <BusinessSolutionsSection />
 
         <section className="page" id="home" aria-labelledby="home-title">
           <div className="hero">
