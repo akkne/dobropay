@@ -47,30 +47,25 @@ public sealed class DeveloperService(
             UpdatedAt = now
         };
 
-        ApiCredential? defaultKey = null;
-        ApiKeyCreatedDto? keyDto = null;
-        if (options.SandboxEnabled)
+        var rawKey = GenerateRawKey(DomainConstants.TestApiKeyPrefix);
+        var defaultKey = new ApiCredential
         {
-            var rawKey = GenerateRawKey(DomainConstants.TestApiKeyPrefix);
-            defaultKey = new ApiCredential
-            {
-                Id = Guid.NewGuid(),
-                ShopId = shopId,
-                KeyHash = hashProvider.ComputeSha256Hex(rawKey),
-                Name = "Default Test Key",
-                Mode = DomainConstants.ApiKeyModeTest,
-                KeyPrefix = BuildKeyPrefix(rawKey),
-                CreatedAt = now
-            };
-            keyDto = new ApiKeyCreatedDto(
-                defaultKey.Id,
-                defaultKey.Name,
-                defaultKey.Mode,
-                rawKey,
-                defaultKey.KeyPrefix,
-                BuildKeyMask(rawKey),
-                defaultKey.CreatedAt);
-        }
+            Id = Guid.NewGuid(),
+            ShopId = shopId,
+            KeyHash = hashProvider.ComputeSha256Hex(rawKey),
+            Name = "Default Test Key",
+            Mode = DomainConstants.ApiKeyModeTest,
+            KeyPrefix = BuildKeyPrefix(rawKey),
+            CreatedAt = now
+        };
+        var keyDto = new ApiKeyCreatedDto(
+            defaultKey.Id,
+            defaultKey.Name,
+            defaultKey.Mode,
+            rawKey,
+            defaultKey.KeyPrefix,
+            BuildKeyMask(rawKey),
+            defaultKey.CreatedAt);
 
         await repository.CreateShopWithDefaultsAsync(shop, membership, profile, defaultKey, cancellationToken);
 
@@ -287,14 +282,6 @@ public sealed class DeveloperService(
                 403,
                 ErrorCodes.Forbidden,
                 "Role does not have permission to manage API keys.");
-        }
-
-        if (!options.SandboxEnabled && request.Mode == DomainConstants.ApiKeyModeTest)
-        {
-            return DeveloperOperationResult<ApiKeyCreatedDto>.Failure(
-                400,
-                ErrorCodes.InvalidKeyMode,
-                "Test API keys are unavailable.");
         }
 
         if (request.Mode != DomainConstants.ApiKeyModeTest &&

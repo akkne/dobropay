@@ -74,7 +74,7 @@ public sealed class DeveloperServiceTests
     }
 
     [Fact]
-    public async Task CreateShop_WithoutSandbox_DoesNotIssueTestKey()
+    public async Task CreateShop_WithoutSandbox_IssuesTestKey()
     {
         var options = new DeveloperApiOptions
         {
@@ -87,8 +87,8 @@ public sealed class DeveloperServiceTests
         var result = await service.CreateShopAsync(Guid.NewGuid(), new CreateShopRequest("Shop"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Null(result.Value!.DefaultKey);
-        Assert.Empty(_repository.Credentials);
+        Assert.StartsWith(DomainConstants.TestApiKeyPrefix, result.Value!.DefaultKey!.ApiKey, StringComparison.Ordinal);
+        Assert.Single(_repository.Credentials);
     }
 
     [Fact]
@@ -321,7 +321,25 @@ public sealed class DeveloperServiceTests
     }
 
     [Fact]
-    public async Task CreateApiKey_Test_Forbidden_WhenSandboxDisabled()
+    public async Task CreateApiKey_Test_Allowed_ForNewShopOwner()
+    {
+        var service = CreateService();
+        var accountId = Guid.NewGuid();
+        var shop = await service.CreateShopAsync(accountId, new CreateShopRequest("Shop"), CancellationToken.None);
+
+        var result = await service.CreateApiKeyAsync(
+            accountId,
+            shop.Value!.Id,
+            new CreateApiKeyRequest("Integration", DomainConstants.ApiKeyModeTest),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(201, result.StatusCode);
+        Assert.Equal(2, _repository.Credentials.Count);
+    }
+
+    [Fact]
+    public async Task CreateApiKey_Test_Allowed_ForOwner_WhenSandboxDisabled()
     {
         var options = new DeveloperApiOptions
         {
@@ -345,9 +363,10 @@ public sealed class DeveloperServiceTests
             new CreateApiKeyRequest("Key", DomainConstants.ApiKeyModeTest),
             CancellationToken.None);
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(400, result.StatusCode);
-        Assert.Empty(_repository.Credentials);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(201, result.StatusCode);
+        Assert.StartsWith(DomainConstants.TestApiKeyPrefix, result.Value!.ApiKey, StringComparison.Ordinal);
+        Assert.Single(_repository.Credentials);
     }
 
     [Fact]
