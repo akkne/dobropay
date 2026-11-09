@@ -1,5 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
 import { Brand } from '../ui/Brand';
 import { Button } from '../ui/Button';
 
@@ -14,7 +13,7 @@ export interface AdminTopBarProps {
 export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   shopName,
   isAuthenticated,
-  userEmail = 'demo@dobropay.local',
+  userEmail,
   onOpenLogin,
   onLogout
 }) => {
@@ -25,26 +24,10 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-dp-tint rounded-pill border border-dp-line text-xs font-semibold text-dp-blue">
           <span className="w-2 h-2 rounded-full bg-dp-green" />
           <span>{shopName}</span>
-          <span className="text-[10px] bg-dp-blush text-dp-blue font-bold px-1.5 py-0.2 rounded">
-            Тест
-          </span>
         </div>
       </div>
 
       <div className="flex items-center gap-2.5">
-        <Link
-          href="/checkout/demo-checkout-token-2026"
-          target="_blank"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium border border-dp-line bg-transparent text-dp-blue hover:bg-dp-tint transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" y1="14" x2="21" y2="3" />
-          </svg>
-          <span className="hidden sm:inline">Открыть</span>
-          <span>Checkout</span>
-        </Link>
 
         {!isAuthenticated ? (
           <Button variant="primary" size="sm" onClick={onOpenLogin}>
