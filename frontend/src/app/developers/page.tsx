@@ -1,7 +1,6 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
+import './developers.css';
 
 type NavigationLink = { id: string; label: string };
 type NavigationEntry = NavigationLink | { heading: string };
@@ -83,7 +82,7 @@ export default function DevelopersPage() {
           <span className="docs-brand-mark grid place-items-center"><span>D</span></span>
           <span>Dobropay <span className="docs-brand-subtitle font-normal">/ Документация API</span></span>
         </Link>
-        <Link href="/" className="docs-header-action text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700">В кабинет →</Link>
+        <Link href="/managing" className="docs-header-action text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700">В кабинет →</Link>
       </header>
 
       <div className="docs-shell mx-auto flex">
@@ -102,6 +101,9 @@ export default function DevelopersPage() {
             <h1 className="docs-title max-w-3xl text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">API Dobropay</h1>
             <p className="docs-lead mt-5 max-w-3xl text-lg leading-8 text-slate-600">
               Единый API для создания и обработки платежей, возвратов и уведомлений о смене статусов.
+            </p>
+            <p className="docs-callout mt-6 max-w-3xl border p-4 text-sm leading-6">
+              Сейчас доступен тестовый контур. Боевые платежи будут доступны после подключения реального провайдера.
             </p>
           </div>
 
@@ -187,7 +189,7 @@ export default function DevelopersPage() {
 
           <section id="openapi" className="docs-section mt-16 scroll-mt-24 border-t border-slate-200 pt-10">
             <SectionTitle>Спецификация OpenAPI</SectionTitle>
-            <p className="mb-5 max-w-3xl leading-7">Схема описывает доступные методы API, параметры запросов и форматы ответов локального контура.</p>
+            <p className="mb-5 max-w-3xl leading-7">Swagger UI сервиса платежей описывает его методы, параметры запросов и форматы ответов.</p>
             <div className="flex flex-wrap gap-3">
               <a className="docs-action docs-action-primary rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700" href="https://dobroplay.online/swagger" target="_blank" rel="noreferrer">Открыть Swagger UI →</a>
               <a className="docs-action docs-action-secondary rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50" href="https://dobroplay.online/swagger/v1/swagger.json" target="_blank" rel="noreferrer">Скачать JSON-схему</a>
@@ -213,7 +215,7 @@ X-Dobropay-Signature: sha256=<hex>
             <SectionTitle>История изменений</SectionTitle>
             <div className="docs-card rounded-xl border border-slate-200 p-5">
               <p className="text-sm font-semibold text-slate-950">Текущая версия API</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Доступны создание и просмотр платежей, подтверждение или отмена списания, возвраты, сохранённые способы оплаты и подписанные webhook-события. Полный контракт опубликован в спецификации OpenAPI.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">В тестовом контуре доступны создание и просмотр платежей, подтверждение или отмена списания, возвраты и сохранённые способы оплаты. Методы сервиса платежей опубликованы в спецификации OpenAPI.</p>
             </div>
           </section>
 
