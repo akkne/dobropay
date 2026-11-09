@@ -3,7 +3,7 @@ services:
     image: postgres:17.6
     environment:
       POSTGRES_USER: ${AUTH_DB_USER}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?Set AUTH_DB_PASSWORD in .env}
       POSTGRES_DB: ${AUTH_DB_NAME}
     ports:
       - "127.0.0.1:${AUTH_DB_PORT:-5433}:5432"
@@ -18,7 +18,7 @@ services:
     image: postgres:17.6
     environment:
       POSTGRES_USER: ${MERCHANT_DEV_DB_USER}
-      POSTGRES_PASSWORD: ${MERCHANT_DEV_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${MERCHANT_DEV_DB_PASSWORD:?Set MERCHANT_DEV_DB_PASSWORD in .env}
       POSTGRES_DB: ${MERCHANT_DEV_DB_NAME}
     ports:
       - "127.0.0.1:${MERCHANT_DEV_DB_PORT:-5434}:5432"
@@ -33,7 +33,7 @@ services:
     image: postgres:17.6
     environment:
       POSTGRES_USER: ${PAYMENTS_DB_USER}
-      POSTGRES_PASSWORD: ${PAYMENTS_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${PAYMENTS_DB_PASSWORD:?Set PAYMENTS_DB_PASSWORD in .env}
       POSTGRES_DB: ${PAYMENTS_DB_NAME}
     ports:
       - "127.0.0.1:${PAYMENTS_DB_PORT:-5435}:5432"
@@ -48,7 +48,7 @@ services:
     image: postgres:17.6
     environment:
       POSTGRES_USER: ${NOTIFICATIONS_DB_USER}
-      POSTGRES_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:?Set NOTIFICATIONS_DB_PASSWORD in .env}
       POSTGRES_DB: ${NOTIFICATIONS_DB_NAME}
     ports:
       - "127.0.0.1:${NOTIFICATIONS_DB_PORT:-5436}:5432"
@@ -63,7 +63,7 @@ services:
     image: postgres:17.6
     environment:
       POSTGRES_USER: ${RECEIPTS_DB_USER}
-      POSTGRES_PASSWORD: ${RECEIPTS_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${RECEIPTS_DB_PASSWORD:?Set RECEIPTS_DB_PASSWORD in .env}
       POSTGRES_DB: ${RECEIPTS_DB_NAME}
     ports:
       - "127.0.0.1:${RECEIPTS_DB_PORT:-5437}:5432"
@@ -92,7 +92,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?Set KAFKA_CLUSTER_ID in .env}
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
@@ -119,11 +119,6 @@ services:
       interval: 3s
       retries: 30
 
-  mailpit:
-    image: axllent/mailpit:v1.32.0
-    ports:
-      - "127.0.0.1:${MAILPIT_HTTP_PORT:-8025}:8025"
-
   setup:
     build:
       context: .
@@ -142,27 +137,11 @@ services:
       receipts-db:
         condition: service_healthy
     environment:
-      AUTH_DB_CONNECTION_STRING: Host=auth-db;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
-      MERCHANT_DEV_DB_CONNECTION_STRING: Host=merchant-dev-db;Database=${MERCHANT_DEV_DB_NAME};Username=${MERCHANT_DEV_DB_USER};Password=${MERCHANT_DEV_DB_PASSWORD}
-      PAYMENTS_DB_CONNECTION_STRING: Host=payments-db;Database=${PAYMENTS_DB_NAME};Username=${PAYMENTS_DB_USER};Password=${PAYMENTS_DB_PASSWORD}
-      NOTIFICATIONS_DB_CONNECTION_STRING: Host=notifications-db;Database=${NOTIFICATIONS_DB_NAME};Username=${NOTIFICATIONS_DB_USER};Password=${NOTIFICATIONS_DB_PASSWORD}
-      RECEIPTS_DB_CONNECTION_STRING: Host=receipts-db;Database=${RECEIPTS_DB_NAME};Username=${RECEIPTS_DB_USER};Password=${RECEIPTS_DB_PASSWORD}
-      DEMO_STAFF_ID: ${DEMO_STAFF_ID}
-      DEMO_STAFF_EMAIL: ${DEMO_STAFF_EMAIL}
-      DEMO_STAFF_PASSWORD: ${DEMO_STAFF_PASSWORD}
-      DEMO_STAFF_SALT_SEED: ${DEMO_STAFF_SALT_SEED}
-      DEMO_SHOP_A_ID: ${DEMO_SHOP_A_ID}
-      DEMO_SHOP_A_NAME: ${DEMO_SHOP_A_NAME}
-      DEMO_CREDENTIAL_A_ID: ${DEMO_CREDENTIAL_A_ID}
-      DEMO_KEY_A: ${DEMO_KEY_A}
-      DEMO_SUBSCRIPTION_A_ID: ${DEMO_SUBSCRIPTION_A_ID}
-      DEMO_SHOP_B_ID: ${DEMO_SHOP_B_ID}
-      DEMO_SHOP_B_NAME: ${DEMO_SHOP_B_NAME}
-      DEMO_CREDENTIAL_B_ID: ${DEMO_CREDENTIAL_B_ID}
-      DEMO_KEY_B: ${DEMO_KEY_B}
-      DEMO_SUBSCRIPTION_B_ID: ${DEMO_SUBSCRIPTION_B_ID}
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
-      DEMO_WEBHOOK_URL: ${DEMO_WEBHOOK_URL}
+      AUTH_DB_CONNECTION_STRING: Host=auth-db;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD:?Set AUTH_DB_PASSWORD in .env}
+      MERCHANT_DEV_DB_CONNECTION_STRING: Host=merchant-dev-db;Database=${MERCHANT_DEV_DB_NAME};Username=${MERCHANT_DEV_DB_USER};Password=${MERCHANT_DEV_DB_PASSWORD:?Set MERCHANT_DEV_DB_PASSWORD in .env}
+      PAYMENTS_DB_CONNECTION_STRING: Host=payments-db;Database=${PAYMENTS_DB_NAME};Username=${PAYMENTS_DB_USER};Password=${PAYMENTS_DB_PASSWORD:?Set PAYMENTS_DB_PASSWORD in .env}
+      NOTIFICATIONS_DB_CONNECTION_STRING: Host=notifications-db;Database=${NOTIFICATIONS_DB_NAME};Username=${NOTIFICATIONS_DB_USER};Password=${NOTIFICATIONS_DB_PASSWORD:?Set NOTIFICATIONS_DB_PASSWORD in .env}
+      RECEIPTS_DB_CONNECTION_STRING: Host=receipts-db;Database=${RECEIPTS_DB_NAME};Username=${RECEIPTS_DB_USER};Password=${RECEIPTS_DB_PASSWORD:?Set RECEIPTS_DB_PASSWORD in .env}
 
   auth:
     build:
@@ -175,8 +154,8 @@ services:
         condition: service_completed_successfully
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Runtime: Host=auth-db;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      ConnectionStrings__Runtime: Host=auth-db;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD:?Set AUTH_DB_PASSWORD in .env}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
 
   developer-api:
     build:
@@ -191,9 +170,10 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Runtime: Host=merchant-dev-db;Database=${MERCHANT_DEV_DB_NAME};Username=${MERCHANT_DEV_DB_USER};Password=${MERCHANT_DEV_DB_PASSWORD}
+      ConnectionStrings__Runtime: Host=merchant-dev-db;Database=${MERCHANT_DEV_DB_NAME};Username=${MERCHANT_DEV_DB_USER};Password=${MERCHANT_DEV_DB_PASSWORD:?Set MERCHANT_DEV_DB_PASSWORD in .env}
       Services__Auth: ${AUTH_SERVICE_URL}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      Sandbox__Enabled: ${SANDBOX_ENABLED}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
 
   payments:
     build:
@@ -210,14 +190,14 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Runtime: Host=payments-db;Database=${PAYMENTS_DB_NAME};Username=${PAYMENTS_DB_USER};Password=${PAYMENTS_DB_PASSWORD}
+      ConnectionStrings__Runtime: Host=payments-db;Database=${PAYMENTS_DB_NAME};Username=${PAYMENTS_DB_USER};Password=${PAYMENTS_DB_PASSWORD:?Set PAYMENTS_DB_PASSWORD in .env}
       Services__DeveloperApi: ${DEVELOPER_API_SERVICE_URL}
       Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
-      CHECKOUT_SECRET: ${CHECKOUT_SECRET}
-      PROVIDER_SECRET: ${PROVIDER_SECRET}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
+      CHECKOUT_SECRET: ${CHECKOUT_SECRET:?Set CHECKOUT_SECRET in .env}
+      PROVIDER_SECRET: ${PROVIDER_SECRET:?Set PROVIDER_SECRET in .env}
       Sandbox__Enabled: ${SANDBOX_ENABLED}
-      Sandbox__PublicBaseUrl: ${PUBLIC_BASE_URL}
+      Sandbox__PublicBaseUrl: ${PUBLIC_BASE_URL:?Set PUBLIC_BASE_URL in .env}
       Sandbox__InternalBaseUrl: ${PAYMENTS_SERVICE_URL}
       Reconciliation__IntervalSeconds: ${RECONCILIATION_INTERVAL_SECONDS}
       Reconciliation__AttemptStaleSeconds: ${RECONCILIATION_ATTEMPT_STALE_SECONDS}
@@ -239,12 +219,12 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Runtime: Host=notifications-db;Database=${NOTIFICATIONS_DB_NAME};Username=${NOTIFICATIONS_DB_USER};Password=${NOTIFICATIONS_DB_PASSWORD}
+      ConnectionStrings__Runtime: Host=notifications-db;Database=${NOTIFICATIONS_DB_NAME};Username=${NOTIFICATIONS_DB_USER};Password=${NOTIFICATIONS_DB_PASSWORD:?Set NOTIFICATIONS_DB_PASSWORD in .env}
       Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
       Redis__Connection: ${REDIS_CONNECTION}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
       Sandbox__Enabled: ${SANDBOX_ENABLED}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
 
   email:
     build:
@@ -252,15 +232,15 @@ services:
       args:
         PROJECT: backend/Dobropay.Email/Dobropay.Email.csproj
     command: Dobropay.Email.dll
-    depends_on:
-      mailpit:
-        condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
-      Smtp__Host: ${SMTP_HOST}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
+      Smtp__Host: ${SMTP_HOST:?Set SMTP_HOST in .env}
       Smtp__Port: ${SMTP_PORT}
-      Smtp__From: ${SMTP_FROM}
+      Smtp__From: ${SMTP_FROM:?Set SMTP_FROM in .env}
+      Smtp__Username: ${SMTP_USERNAME:?Set SMTP_USERNAME in .env}
+      Smtp__Password: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}
+      Smtp__EnableSsl: ${SMTP_ENABLE_SSL}
 
   receipts:
     build:
@@ -277,16 +257,16 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Runtime: Host=receipts-db;Database=${RECEIPTS_DB_NAME};Username=${RECEIPTS_DB_USER};Password=${RECEIPTS_DB_PASSWORD}
+      ConnectionStrings__Runtime: Host=receipts-db;Database=${RECEIPTS_DB_NAME};Username=${RECEIPTS_DB_USER};Password=${RECEIPTS_DB_PASSWORD:?Set RECEIPTS_DB_PASSWORD in .env}
       Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
       Services__Email: ${EMAIL_SERVICE_URL}
       Services__Payments: ${PAYMENTS_SERVICE_URL}
-      Fiscal__ProviderMode: ${FISCAL_PROVIDER_MODE:-sandbox}
-      Fiscal__CloudKktBaseUrl: ${FISCAL_CLOUD_KKT_BASE_URL:-}
-      Fiscal__CloudKktApiKey: ${FISCAL_CLOUD_KKT_API_KEY:-}
+      Sandbox__Enabled: ${SANDBOX_ENABLED}
+      Fiscal__ProviderMode: ${FISCAL_PROVIDER_MODE:?Set FISCAL_PROVIDER_MODE in .env}
+      Fiscal__CloudKktBaseUrl: ${FISCAL_CLOUD_KKT_BASE_URL:?Set FISCAL_CLOUD_KKT_BASE_URL in .env}
+      Fiscal__CloudKktApiKey: ${FISCAL_CLOUD_KKT_API_KEY:?Set FISCAL_CLOUD_KKT_API_KEY in .env}
       Fiscal__OfdBaseUrl: ${FISCAL_OFD_BASE_URL:-}
-      Demo__ReceiptEmail: ${DEMO_RECEIPT_EMAIL}
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
 
   merchant-admin:
     build:
@@ -307,7 +287,7 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_URLS: http://+:8080
-      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
       Services__Auth: ${AUTH_SERVICE_URL}
       Services__DeveloperApi: ${DEVELOPER_API_SERVICE_URL}
       Services__Payments: ${PAYMENTS_SERVICE_URL}

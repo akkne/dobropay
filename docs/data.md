@@ -10,7 +10,7 @@
 | `Dobropay.DeveloperApi` | `merchant-dev-db` | `merchant_dev_db` | `MerchantDbContext` | `Shop` (`shops`), `ApiCredential` (`api_credentials`), `ShopMembership` (`shop_memberships`) | `backend/Dobropay.DeveloperApi/Persistence/Migrations` |
 | `Dobropay.Payments` | `payments-db` | `payments_db` | `PaymentsDbContext` | `Payment` (`payments`), `CheckoutLink` (`checkout_links`), `PaymentAttempt` (`payment_attempts`), `IdempotencyRecord` (`idempotency_records`), `ProviderInbox` (`provider_inbox`), `OutboxEvent` (`outbox_events`) | `backend/Dobropay.Payments/Persistence/Migrations` |
 | `Dobropay.Notifications` | `notifications-db` | `notifications_db` | `NotificationsDbContext` | `WebhookSubscription` (`webhook_subscriptions`), `NotificationInbox` (`notification_inbox`), `WebhookDelivery` (`webhook_deliveries`), `WebhookDeliveryAttempt` (`webhook_delivery_attempts`), `LocalReceiverEvent` (`local_receiver_events`) | `backend/Dobropay.Notifications/Persistence/Migrations` |
-| `Dobropay.Receipts` | `receipts-db` | `receipts_db` | `ReceiptsDbContext` | `ReceiptInbox` (`receipt_inbox`), `DemoReceipt` (`demo_receipts`) | `backend/Dobropay.Receipts/Persistence/Migrations` |
+| `Dobropay.Receipts` | `receipts-db` | `receipts_db` | `ReceiptsDbContext` | `ReceiptInbox` (`receipt_inbox`), `FiscalReceipt` (`fiscal_receipts`) | `backend/Dobropay.Receipts/Persistence/Migrations` |
 
 Дополнительно сервис `Dobropay.Notifications` использует **Redis** (`redis:6379`) через абстракции `IRedisConnectionProvider` и `IRateLimiter` для краткоживущих ключей TTL-лимитирования.
 
