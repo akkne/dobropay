@@ -23,7 +23,7 @@ export default function LandingPage() {
         <div className="wrap topbar">
           <Brand />
           <nav className="nav" aria-label="Основное меню">
-            <Link className="nav-home" href="/#home">Главная</Link>
+            <a className="nav-home" href="#home">Главная</a>
             <a className="nav-solutions" href="/#solutions">Решения для бизнеса</a>
             <a className="nav-receipts" href="/#receipts">Чеки</a>
             <a className="nav-connect" href="/#connect">Как подключить</a>
