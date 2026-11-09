@@ -4,5 +4,7 @@
 !*.example
 **/bin
 **/obj
+**/node_modules
+**/.next
 TestResults
 *.log
