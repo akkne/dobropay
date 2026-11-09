@@ -1010,7 +1010,7 @@ public static class PaymentsEndpoints
                 await repository.AddReceiptPayloadAsync(receiptPayload, ct);
             }
 
-            if (paymentMethodType == PaymentMethodTypes.Sbp && confirmationType == ConfirmationTypes.Qr)
+            if (paymentMethodType == PaymentMethodTypes.Sbp && confirmationType == ConfirmationTypes.Qr && !options.SandboxEnabled)
             {
                 var attemptId = Guid.NewGuid();
                 var operationKey = Guid.NewGuid();

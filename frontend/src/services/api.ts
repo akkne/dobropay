@@ -173,6 +173,19 @@ export class DobropayApiClient {
     return { ...session, amount: Math.round(session.amount * 100) };
   }
 
+  public startSbpCheckout(token: string): Promise<void> {
+    return this.request(`/checkout/${encodeURIComponent(token)}/start`, {
+      method: 'POST',
+      body: JSON.stringify({ method: 'sbp' })
+    });
+  }
+
+  public simulateSbpCheckout(token: string, outcome: 'succeeded' | 'canceled'): Promise<void> {
+    return this.request(`/checkout/${encodeURIComponent(token)}/simulate/${outcome}`, {
+      method: 'POST'
+    });
+  }
+
 }
 
 export const apiClient = new DobropayApiClient();
