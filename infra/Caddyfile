@@ -35,6 +35,9 @@
     handle /v1/receipts* {
         reverse_proxy receipts:8080
     }
+    handle /swagger* {
+        reverse_proxy payments:8080
+    }
     handle /health/live {
         respond "live" 200
     }

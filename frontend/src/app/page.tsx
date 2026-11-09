@@ -1,200 +1,190 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import './landing.css';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { AdminTopBar } from '../components/admin/AdminTopBar';
-import { AdminNavBar, AdminTab } from '../components/admin/AdminNavBar';
-import { KpiSummaryGrid } from '../components/admin/KpiSummaryGrid';
-import { PaymentsTable } from '../components/admin/PaymentsTable';
-import { PaymentDrawer } from '../components/admin/PaymentDrawer';
-import { CaptureModal } from '../components/admin/CaptureModal';
-import { RefundModal } from '../components/admin/RefundModal';
-import { ApiKeysSection } from '../components/admin/ApiKeysSection';
-import { WebhooksSection } from '../components/admin/WebhooksSection';
-import { ReceiptsTable } from '../components/admin/ReceiptsTable';
-import { AuthModal } from '../components/admin/AuthModal';
-import { Modal } from '../components/ui/Modal';
-import { Receipt } from '../components/ui/Receipt';
-import { apiClient } from '../services/api';
-import { Payment } from '../types/Payment';
-import { WebhookDelivery } from '../types/WebhookDelivery';
-import { FiscalReceipt } from '../types/FiscalReceipt';
-import { ApiKey } from '../types/ApiKey';
-import { Shop } from '../types/Shop';
+export const metadata: Metadata = {
+  title: 'dobropay — приём платежей через СБП',
+  description: 'Приём платежей на сайте и по ссылке, чеки и подключение магазина.'
+};
 
-function AdminContent() {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<AdminTab>((searchParams.get('tab') as AdminTab) || 'payments');
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
-  const [receipts, setReceipts] = useState<FiscalReceipt[]>([]);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [shopName, setShopName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCaptureOpen, setIsCaptureOpen] = useState(false);
-  const [isRefundOpen, setIsRefundOpen] = useState(false);
-  const [previewReceipt, setPreviewReceipt] = useState<FiscalReceipt | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [newKey, setNewKey] = useState<string | null>(null);
-
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  const loadData = useCallback(async () => {
-    if (!apiClient.getToken()) return;
-    try {
-      setError(null);
-      const shops = await apiClient.getShops();
-      const selected = shops[0] ?? null;
-      setShop(selected);
-      if (!selected) return;
-      const [nextPayments, nextDeliveries, nextReceipts, nextKeys] = await Promise.all([
-        apiClient.getPayments(selected.id),
-        apiClient.getDeliveries(selected.id),
-        apiClient.getReceipts(selected.id),
-        apiClient.getApiKeys(selected.id)
-      ]);
-      setPayments(nextPayments);
-      setDeliveries(nextDeliveries);
-      setReceipts(nextReceipts);
-      setApiKeys(nextKeys);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Не удалось загрузить данные');
-    }
-  }, []);
-
-  useEffect(() => {
-    const authenticated = !!apiClient.getToken();
-    setIsAuthenticated(authenticated);
-    if (authenticated) void loadData();
-  }, [loadData]);
-
-  const runAction = async (action: () => Promise<unknown>, success: string) => {
-    try {
-      await action();
-      await loadData();
-      showToast(success);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Операция не выполнена');
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col text-dp-blue">
-      <AdminTopBar
-        shopName={shop?.name || 'Dobropay'}
-        isAuthenticated={isAuthenticated}
-        onOpenLogin={() => { setError(null); setIsAuthOpen(true); }}
-        onLogout={() => {
-          void apiClient.logout().catch(() => {
-            setError('Сервер не подтвердил выход. Локальная сессия закрыта.');
-          }).finally(() => {
-            setIsAuthenticated(false);
-            setShop(null);
-            setPayments([]);
-            setDeliveries([]);
-            setReceipts([]);
-            setApiKeys([]);
-          });
-        }}
-      />
-      {isAuthenticated && shop && <AdminNavBar activeTab={activeTab} onChange={setActiveTab} />}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {error && <div role="alert" className="rounded-card border border-dp-red p-4 text-dp-red">{error} <button type="button" onClick={() => void loadData()} className="underline">Повторить</button></div>}
-        {!isAuthenticated && <p>Войдите в личный кабинет, чтобы увидеть данные магазина.</p>}
-        {isAuthenticated && !shop && (
-          <form onSubmit={async event => {
-            event.preventDefault();
-            await runAction(() => apiClient.createShop(shopName), 'Магазин создан');
-          }} className="max-w-md bg-white p-6 rounded-card border border-dp-line space-y-4">
-            <h2 className="font-bold">Создать магазин</h2>
-            <input required value={shopName} onChange={event => setShopName(event.target.value)} placeholder="Название магазина" className="w-full border border-dp-line rounded-card p-3" />
-            <button type="submit" className="bg-dp-blue text-white rounded-pill px-4 py-2">Создать</button>
-          </form>
-        )}
-        {isAuthenticated && shop && activeTab === 'payments' && (
-          <div className="space-y-6">
-            <KpiSummaryGrid payments={payments} />
-            <PaymentsTable payments={payments}
-              onSelectPayment={payment => { setSelectedPayment(payment); setIsDrawerOpen(true); }}
-              onCapture={payment => { setSelectedPayment(payment); setIsCaptureOpen(true); }}
-              onCancel={payment => void runAction(() => apiClient.cancelPayment(shop.id, payment.id), 'Платёж отменён')}
-              onRefund={payment => { setSelectedPayment(payment); setIsRefundOpen(true); }} />
-          </div>
-        )}
-        {isAuthenticated && shop && activeTab === 'receipts' && <ReceiptsTable receipts={receipts} onPreviewReceipt={setPreviewReceipt} />}
-        {isAuthenticated && shop && activeTab === 'developer' && (
-          <div className="space-y-6">
-            <ApiKeysSection apiKeys={apiKeys} onCreateKey={async name => {
-              try {
-                const created = await apiClient.createApiKey(shop.id, name);
-                setNewKey(created.apiKey ?? null);
-                await loadData();
-              } catch (cause) {
-                setError(cause instanceof Error ? cause.message : 'Не удалось создать ключ');
-              }
-            }} onRevokeKey={id => void runAction(() => apiClient.revokeApiKey(shop.id, id), 'Ключ отозван')} />
-            <WebhooksSection deliveries={deliveries} />
-          </div>
-        )}
-        {isAuthenticated && shop && activeTab === 'onboarding' && (
-          <p>Статус проверки магазина: {shop.status}. Для обновления реквизитов используйте API подключения.</p>
-        )}
-      </main>
-      <PaymentDrawer isOpen={isDrawerOpen} payment={selectedPayment} onClose={() => setIsDrawerOpen(false)}
-        onCapture={() => { setIsDrawerOpen(false); setIsCaptureOpen(true); }}
-        onCancel={payment => { setIsDrawerOpen(false); if (shop) void runAction(() => apiClient.cancelPayment(shop.id, payment.id), 'Платёж отменён'); }}
-        onRefund={() => { setIsDrawerOpen(false); setIsRefundOpen(true); }} />
-      <CaptureModal payment={selectedPayment} isOpen={isCaptureOpen} onClose={() => setIsCaptureOpen(false)}
-        onConfirm={amount => {
-          if (shop && selectedPayment) void runAction(() => apiClient.capturePayment(shop.id, selectedPayment.id, amount), 'Списание подтверждено');
-          setIsCaptureOpen(false);
-        }} />
-      <RefundModal payment={selectedPayment} isOpen={isRefundOpen} onClose={() => setIsRefundOpen(false)}
-        onConfirm={(amount, reason) => {
-          if (shop && selectedPayment) void runAction(() => apiClient.refundPayment(shop.id, selectedPayment.id, amount, reason), 'Возврат создан');
-          setIsRefundOpen(false);
-        }} />
-      <Modal isOpen={!!previewReceipt} onClose={() => setPreviewReceipt(null)} maxWidth="420px">
-        {previewReceipt && <Receipt orderNumber={previewReceipt.orderNumber} amount={previewReceipt.amount}
-          fnNumber={previewReceipt.fnNumber} fdNumber={previewReceipt.fdNumber} fpdNumber={previewReceipt.fpdNumber} createdAt={previewReceipt.createdAt} />}
-      </Modal>
-      <Modal isOpen={!!newKey} onClose={() => setNewKey(null)}>
-        <h2 className="font-bold mb-3">Новый API-ключ</h2>
-        <p className="text-xs mb-3">Сохраните ключ сейчас: повторно он не отображается.</p>
-        <code className="break-all select-all">{newKey}</code>
-      </Modal>
-      <AuthModal isOpen={isAuthOpen} error={error} onClose={() => setIsAuthOpen(false)} onRegister={async (email, password) => {
-        try {
-          await apiClient.register(email, password);
-          setIsAuthenticated(true);
-          setIsAuthOpen(false);
-          await loadData();
-        } catch (cause) {
-          setError(cause instanceof Error ? cause.message : 'Не удалось зарегистрироваться');
-        }
-      }} onLogin={async (email, password) => {
-        try {
-          await apiClient.login(email, password);
-          setIsAuthenticated(true);
-          setIsAuthOpen(false);
-          await loadData();
-        } catch (cause) {
-          setError(cause instanceof Error ? cause.message : 'Не удалось войти');
-        }
-      }} />
-      {toast && <div className="fixed bottom-6 right-6 z-50 bg-dp-blue text-white px-4 py-2 rounded-pill">{toast}</div>}
-    </div>
-  );
+function Brand() {
+  return <Link className="brand" href="/" aria-label="dobropay — главная">dobropay</Link>;
 }
 
-export default function AdminPage() {
-  return <React.Suspense fallback={<div className="p-8">Загрузка...</div>}><AdminContent /></React.Suspense>;
+function WindowBar() {
+  return <div className="window-bar" aria-hidden="true"><i /><i /><i /></div>;
+}
+
+export default function LandingPage() {
+  return (
+    <div className="landing">
+      <header className="header">
+        <div className="wrap topbar">
+          <Brand />
+          <nav className="nav" aria-label="Основное меню">
+            <Link className="nav-home" href="/">Главная</Link>
+            <a className="nav-receipts" href="/#receipts">Чеки</a>
+            <a className="nav-connect" href="/#connect">Как подключить</a>
+            <Link href="/developers">Разработчикам</Link>
+          </nav>
+          <div className="header-actions">
+            <a className="button primary home-action" href="/#connect">Подключить dobropay</a>
+            <a className="button outline home-action" href="/#demo">Посмотреть демо</a>
+            <Link className="button login" href="/managing">Войти</Link>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section className="page inside" id="connect" aria-labelledby="connect-title">
+          <div className="content">
+            <h1 className="page-title" id="connect-title">Как подключить dobropay</h1>
+            <p className="lead">От регистрации до проверки заявки — три шага.</p>
+            <Link className="button primary connect-action" href="/managing">Перейти в кабинет</Link>
+
+            <ol className="steps">
+              <li className="step">
+                <div>
+                  <span className="step-number">Шаг 1</span>
+                  <h2>Зарегистрируйтесь в dobropay</h2>
+                  <p>Подготовьте ИНН. Укажите имя, номер телефона, рабочую почту и форму бизнеса. Придумайте пароль для личного кабинета.</p>
+                  <p>Если у вас уже есть аккаунт, войдите в него.</p>
+                </div>
+                <div className="window" aria-hidden="true">
+                  <WindowBar />
+                  <div className="registration">
+                    <div className="registration-side"><span className="brand">dobropay</span></div>
+                    <div className="window-body">
+                      <h3>Регистрация</h3>
+                      <div className="field">Ваше имя<span>Анна</span></div>
+                      <div className="field">Форма бизнеса<span>ИП</span></div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+              <li className="step">
+                <div>
+                  <span className="step-number">Шаг 2</span>
+                  <h2>Заполните данные для договора</h2>
+                  <p>Откройте анкету в личном кабинете. Для организации подготовьте:</p>
+                  <ul>
+                    <li>реквизиты организации;</li>
+                    <li>сведения о государственной регистрации;</li>
+                    <li>цветной снимок паспорта;</li>
+                    <li>паспортные данные других владельцев, если они есть.</li>
+                  </ul>
+                </div>
+                <div className="window" aria-hidden="true">
+                  <WindowBar />
+                  <div className="window-body">
+                    <h3>Анкета организации</h3>
+                    <div className="window-list">
+                      <div><b>✓</b>Реквизиты</div>
+                      <div><b>✓</b>Сведения о регистрации</div>
+                      <div><b>✓</b>Документы владельцев</div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+              <li className="step">
+                <div>
+                  <span className="step-number">Шаг 3</span>
+                  <h2>Отправьте данные на проверку</h2>
+                  <p>Проверьте анкету и отправьте заявку. Ответ придёт на рабочую почту и появится в личном кабинете.</p>
+                  <p>Если понадобятся уточнения, в заявке будет указано, какие сведения исправить или какой документ приложить.</p>
+                </div>
+                <div className="window" aria-hidden="true">
+                  <WindowBar />
+                  <div className="window-body review">
+                    <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                      <circle cx="20" cy="20" r="18" fill="var(--pink)" />
+                      <circle cx="20" cy="20" r="12" stroke="currentColor" strokeWidth="2" />
+                      <path d="M20 12v9l6 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <h3>Проверяем данные</h3>
+                    <small>Заявка отправлена</small>
+                  </div>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        <section className="page inside" id="receipts" aria-labelledby="receipts-title">
+          <div className="content">
+            <div className="receipt-layout">
+              <div>
+                <h1 className="page-title" id="receipts-title">Чеки</h1>
+                <p className="lead">После оплаты через СБП покупатель увидит чек. Вот как выглядит заказ из керамической мастерской.</p>
+                <a className="button primary" href="/#connect">Подключить dobropay</a>
+              </div>
+              <article className="receipt" aria-label="Пример чека dobropay">
+                <div className="row">
+                  <span className="brand">dobropay</span>
+                  <span className="status">✓ Оплачено</span>
+                </div>
+                <h2>Чек · Заказ №1042</h2>
+                <dl>
+                  <div className="row"><dt>Керамическая кружка</dt><dd>1 800 ₽</dd></div>
+                  <div className="row"><dt>Количество</dt><dd>1 шт.</dd></div>
+                  <div className="row"><dt>Способ оплаты</dt><dd>СБП</dd></div>
+                </dl>
+                <div className="row total"><span>Итого</span><strong>1 800 ₽</strong></div>
+                <small className="sample">Демонстрационный образец</small>
+              </article>
+            </div>
+            <article className="receipt-note">
+              <h2>Как найти покупку</h2>
+              <p>Если возникнет вопрос о доставке, покупатель сможет назвать номер заказа из чека.</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="page" id="home" aria-labelledby="home-title">
+          <div className="hero">
+            <div className="wrap intro">
+              <h1 id="home-title">Принимайте платежи<br />на сайте и по ссылке</h1>
+              <p>Покупатель платит через СБП в приложении банка. Вы видите, какой заказ оплачен.</p>
+            </div>
+            <figure className="preview" id="demo" aria-label="Пример покупки в мастерской">
+              <ol className="papers">
+                <li className="paper order">
+                  <div className="row paper-head"><span>Мастерская</span><span>№1042</span></div>
+                  <div className="product">
+                    <svg className="mug" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                      <path d="M31 15h4a6 6 0 0 1 0 12h-4" stroke="var(--blue)" strokeWidth="2.4" />
+                      <path d="M9 13h23v14a10 10 0 0 1-10 10h-3A10 10 0 0 1 9 27Z" fill="var(--pink)" stroke="var(--blue)" strokeWidth="2.4" />
+                      <ellipse cx="20.5" cy="13" rx="11.5" ry="3" fill="var(--white)" stroke="var(--blue)" strokeWidth="2" />
+                    </svg>
+                    <div><strong>Керамическая кружка</strong><small>1 шт.</small></div>
+                  </div>
+                  <div className="row paper-foot"><span>Итого</span><b>1 800 ₽</b></div>
+                </li>
+                <li className="paper payment">
+                  <h2>К оплате</h2>
+                  <strong className="amount">1 800 ₽</strong>
+                  <span className="pay-action">Оплатить через СБП</span>
+                </li>
+                <li className="paper notice">
+                  <div className="notice-head"><span className="check" aria-hidden="true">✓</span><strong>Заказ оплачен</strong></div>
+                  <p>Заказ №1042<br />Керамическая кружка</p>
+                  <div className="row paper-foot"><span>СБП</span><b>1 800 ₽</b></div>
+                </li>
+              </ol>
+              <figcaption>Демонстрационные данные</figcaption>
+            </figure>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div className="wrap footer-inner">
+          <Brand />
+          <small>Оплата через СБП</small>
+        </div>
+      </footer>
+    </div>
+  );
 }

@@ -6,6 +6,6 @@
 
 GitHub Actions запускает сборку и тесты при push в `main`, затем обновляет `/opt/dobropay` по SSH и выполняет `docker compose up --build`. Секреты репозитория: `SSH_DEPLOY_KEY` (закрытый ключ) и `SSH_KNOWN_HOSTS` (проверенный host key сервера). `.env` хранится только на сервере и не перезаписывается деплоем. Из-за ограниченной памяти сервера сборка выполняется последовательно; для устойчивой эксплуатации нужен сервер большего размера.
 
-Caddy маршрутизирует `/v1/auth/*`, `/v1/developer/*`, `/v1/admin/*`, `/v1/payments*`, `/v1/refunds*`, `/v1/payment-methods*`, `/v1/checkout/*`, `/checkout/*/session`, `/checkout/*/start`, `/v1/provider/*` и `/v1/receipts*`. Все остальные страницы обслуживает Next.js. Публичных маршрутов локального webhook-приёмника и симуляции на `/checkout/*/simulate/*` нет.
+Caddy маршрутизирует `/v1/auth/*`, `/v1/developer/*`, `/v1/admin/*`, `/v1/payments*`, `/v1/refunds*`, `/v1/payment-methods*`, `/v1/checkout/*`, `/checkout/*/session`, `/checkout/*/start`, `/v1/provider/*`, `/v1/receipts*` и `/swagger*` (спецификация сервиса платежей). Страницы `/`, `/managing` и `/developers` обслуживает Next.js. Публичных маршрутов локального webhook-приёмника и симуляции на `/checkout/*/simulate/*` нет.
 
 `SANDBOX_ENABLED=false` блокирует изменяющие запросы в Payments и возвращает `503` на `/health/ready`. Это явная блокировка при отсутствии реального платёжного адаптера. Compose содержит один брокер Kafka с фактором репликации 1; требования к инфраструктуре выпуска перечислены в [плане подготовки](production-readiness.md).
