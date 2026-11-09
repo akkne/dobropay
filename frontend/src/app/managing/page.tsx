@@ -23,6 +23,7 @@ import { WebhookDelivery } from '../../types/WebhookDelivery';
 import { FiscalReceipt } from '../../types/FiscalReceipt';
 import { ApiKey } from '../../types/ApiKey';
 import { Shop } from '../../types/Shop';
+import { DomainConstants } from '../../constants/domain';
 
 function AdminContent() {
   const searchParams = useSearchParams();
@@ -90,6 +91,15 @@ function AdminContent() {
     }
   };
 
+  const createShop = async (name: string) => {
+    const created = await apiClient.createShop(name);
+    if (created.defaultKey) {
+      sessionStorage.setItem(DomainConstants.StorageKeys.PaymentApiKey, created.defaultKey);
+      setNewKey(created.defaultKey);
+    }
+    await loadData();
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col text-dp-blue">
       <AdminTopBar
@@ -97,7 +107,7 @@ function AdminContent() {
         isAuthenticated={isAuthenticated}
         onOpenLogin={() => { setError(null); setIsAuthOpen(true); }}
         onLogout={() => {
-          sessionStorage.removeItem('dp_payment_api_key');
+          sessionStorage.removeItem(DomainConstants.StorageKeys.PaymentApiKey);
           void apiClient.logout().catch(() => {
             setError('Сервер не подтвердил выход. Локальная сессия закрыта.');
           }).finally(() => {
@@ -115,9 +125,11 @@ function AdminContent() {
         {error && <div role="alert" className="rounded-card border border-dp-red p-4 text-dp-red">{error} <button type="button" onClick={() => void loadData()} className="underline">Повторить</button></div>}
         {!isAuthenticated && <p>Войдите в личный кабинет, чтобы увидеть данные магазина.</p>}
         {isAuthenticated && !shop && <ShopOnboardingForm onSubmit={async (data: ShopOnboardingData) => {
-          await apiClient.createShop(data.name);
-          await loadData();
-          showToast('Магазин создан, анкета отправлена на рассмотрение');
+          await createShop(data.name);
+          showToast('Магазин создан. Анкета сохранена в этом браузере');
+        }} onSkip={async () => {
+          await createShop(DomainConstants.DefaultShopName);
+          showToast('Магазин создан. Анкету можно заполнить позже');
         }} />}
         {isAuthenticated && shop && activeTab === 'payments' && (
           <div className="space-y-6">
@@ -137,21 +149,19 @@ function AdminContent() {
         {isAuthenticated && shop && activeTab === 'receipts' && <ReceiptsTable receipts={receipts} onPreviewReceipt={setPreviewReceipt} />}
         {isAuthenticated && shop && activeTab === 'developer' && (
           <div className="space-y-6">
-            <ApiKeysSection apiKeys={apiKeys} onCreateKey={async name => {
-              try {
-                const created = await apiClient.createApiKey(shop.id, name);
-                setNewKey(created.apiKey ?? null);
-                if (created.apiKey) sessionStorage.setItem('dp_payment_api_key', created.apiKey);
-                await loadData();
-              } catch (cause) {
-                setError(cause instanceof Error ? cause.message : 'Не удалось создать ключ');
-              }
+            <ApiKeysSection apiKeys={apiKeys} canCreateLiveKey={shop.status === 'approved'} onCreateKey={async (name, mode) => {
+              const created = await apiClient.createApiKey(shop.id, name, mode);
+              setNewKey(created.apiKey ?? null);
+              if (created.apiKey) sessionStorage.setItem(DomainConstants.StorageKeys.PaymentApiKey, created.apiKey);
+              await loadData();
             }} onRevokeKey={id => void runAction(() => apiClient.revokeApiKey(shop.id, id), 'Ключ отозван')} />
             <WebhooksSection deliveries={deliveries} />
           </div>
         )}
         {isAuthenticated && shop && activeTab === 'onboarding' && <ShopOnboardingForm onSubmit={async () => {
-          showToast('Анкета сохранена для проверки');
+          showToast('Анкета сохранена в этом браузере');
+        }} onSkip={async () => {
+          setActiveTab('payments');
         }} />}
       </main>
       <PaymentDrawer isOpen={isDrawerOpen} payment={selectedPayment} onClose={() => setIsDrawerOpen(false)}
@@ -159,7 +169,7 @@ function AdminContent() {
         onCancel={payment => { setIsDrawerOpen(false); if (shop) void runAction(() => apiClient.cancelPayment(shop.id, payment.id), 'Платёж отменён'); }}
         onRefund={() => { setIsDrawerOpen(false); setIsRefundOpen(true); }} />
       <CreatePaymentModal isOpen={isCreatePaymentOpen} onClose={() => setIsCreatePaymentOpen(false)} onCreate={async (input: CreatePaymentInput) => {
-        const apiKey = sessionStorage.getItem('dp_payment_api_key');
+        const apiKey = sessionStorage.getItem(DomainConstants.StorageKeys.PaymentApiKey);
         if (!apiKey) throw new Error('Сначала создайте рабочий API-ключ во вкладке «Разработчикам». Ключ сохранится в этой сессии.');
         const created = await apiClient.createPayment(apiKey, input);
         setIsCreatePaymentOpen(false);

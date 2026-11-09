@@ -3,6 +3,7 @@ import { Payment } from '../types/Payment';
 import { WebhookDelivery } from '../types/WebhookDelivery';
 import { FiscalReceipt } from '../types/FiscalReceipt';
 import { ApiKey } from '../types/ApiKey';
+import { ApiKeyMode } from '../types/ApiKeyMode';
 import { CheckoutSession } from '../types/CheckoutSession';
 import { PaymentMethodType } from '../types/PaymentMethodType';
 import { PaymentStatus } from '../types/PaymentStatus';
@@ -84,11 +85,11 @@ export class DobropayApiClient {
     return shops.map(shop => ({ id: shop.id, name: shop.name, status: shop.verification_status }));
   }
 
-  public async createShop(name: string): Promise<Shop> {
-    const created = await this.request<{ id: string; name: string }>('/v1/developer/shops', {
+  public async createShop(name: string): Promise<Shop & { defaultKey: string | null }> {
+    const created = await this.request<{ id: string; name: string; onboarding: { verification_status: string }; default_key: { api_key: string } | null }>('/v1/developer/shops', {
       method: 'POST', body: JSON.stringify({ name })
     });
-    return { id: created.id, name: created.name, status: 'under_review' };
+    return { id: created.id, name: created.name, status: created.onboarding.verification_status, defaultKey: created.default_key?.api_key ?? null };
   }
 
   public async createPayment(apiKey: string, input: { amount: number; externalOrderId: string; paymentMethodType: PaymentMethodType; capture: boolean }): Promise<{ id: string; checkoutUrl: string; status: PaymentStatus }> {
@@ -176,9 +177,9 @@ export class DobropayApiClient {
     return rows.map(k => ({ id: k.id, name: k.name, prefix: k.key_mask || k.key_prefix, createdAt: k.created_at, status: 'active' }));
   }
 
-  public async createApiKey(shopId: string, name: string): Promise<ApiKey> {
+  public async createApiKey(shopId: string, name: string, mode: ApiKeyMode): Promise<ApiKey> {
     const k = await this.request<{ id: string; name: string; api_key: string; key_prefix: string; created_at: string }>(`/v1/developer/shops/${shopId}/keys`, {
-      method: 'POST', body: JSON.stringify({ name, mode: 'live' })
+      method: 'POST', body: JSON.stringify({ name, mode })
     });
     return { id: k.id, name: k.name, prefix: k.key_prefix, apiKey: k.api_key, createdAt: k.created_at, status: 'active' };
   }

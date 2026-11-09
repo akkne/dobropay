@@ -38,7 +38,7 @@ const fields: Array<{ key: keyof ShopOnboardingData; label: string; type?: strin
   { key: 'account', label: 'Расчётный счёт', pattern: '\\d{20}', hint: '20 цифр' }
 ];
 
-export function ShopOnboardingForm({ onSubmit }: { onSubmit: (data: ShopOnboardingData) => Promise<void> }) {
+export function ShopOnboardingForm({ onSubmit, onSkip }: { onSubmit: (data: ShopOnboardingData) => Promise<void>; onSkip: () => Promise<void> }) {
   const [data, setData] = useState<ShopOnboardingData>(emptyData);
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -71,13 +71,28 @@ export function ShopOnboardingForm({ onSubmit }: { onSubmit: (data: ShopOnboardi
     }
   };
 
+  const handleSkip = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await onSkip();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось пропустить анкету');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section className="max-w-3xl rounded-card border border-dp-line bg-white p-5 shadow-sm sm:p-7">
       <h2 className="text-lg font-bold text-dp-blue">Данные магазина</h2>
       <p className="mt-2 text-sm leading-6 text-dp-blue/65">
-        Заполните анкету для подключения. Пока данные анкеты сохраняются в этом браузере.
+        Заполните анкету для подключения или пропустите этот шаг и вернитесь к нему позже. Данные анкеты пока сохраняются в этом браузере.
       </p>
-      {submitted && <p role="status" className="mt-4 rounded-card bg-emerald-50 p-3 text-sm text-emerald-800">Анкета сохранена. Статус: на рассмотрении.</p>}
+      <button disabled={busy} type="button" onClick={() => void handleSkip()} className="mt-4 rounded-pill border border-dp-line px-5 py-2.5 text-sm font-semibold text-dp-blue disabled:opacity-50">
+        Пропустить и перейти в кабинет
+      </button>
+      {submitted && <p role="status" className="mt-4 rounded-card bg-emerald-50 p-3 text-sm text-emerald-800">Анкета сохранена в этом браузере.</p>}
       <form onSubmit={handleSubmit} className="mt-5 grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
           <label key={field.key} className="space-y-1 text-sm font-medium text-dp-blue">

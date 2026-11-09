@@ -7,7 +7,7 @@
 - `POST /v1/auth/register`, `POST /v1/auth/login`, `GET /v1/auth/me`, `POST /v1/auth/refresh`, `POST /v1/auth/logout` — аккаунт и сессия сотрудника.
 - `GET/POST /v1/developer/shops` — список доступных магазинов и создание магазина. Требуется `Authorization: Bearer <access_token>`.
 - `GET/PUT /v1/developer/shops/{shopId}/onboarding`, `POST /v1/developer/shops/{shopId}/onboarding/submit` — реквизиты и заявка на проверку.
-- `GET/POST /v1/developer/shops/{shopId}/keys`, `DELETE /v1/developer/shops/{shopId}/keys/{keyId}` — выпуск и отзыв API-ключей. Боевой ключ выдаётся только после одобрения заявки; тестовые ключи при `SANDBOX_ENABLED=false` не выдаются.
+- `GET/POST /v1/developer/shops/{shopId}/keys`, `DELETE /v1/developer/shops/{shopId}/keys/{keyId}` — выпуск и отзыв API-ключей. Владелец магазина имеет права Developer на управление ключами. Тестовый ключ доступен сразу после создания магазина, даже если анкета не заполнена; боевой ключ выдаётся только после одобрения заявки.
 
 ## Платежи и кабинет
 
