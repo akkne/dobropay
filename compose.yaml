@@ -320,6 +320,7 @@ services:
     image: dobropay-gateway
     environment:
       DOMAIN: ${DOMAIN:-:8080}
+      WWW_DOMAIN: ${WWW_DOMAIN:-localhost}
     depends_on:
       auth:
         condition: service_started
