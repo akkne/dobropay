@@ -10,17 +10,12 @@ export interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
-  const [email, setEmail] = useState('demo@dobropay.local');
-  const [password, setPassword] = useState('local-demo-password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onLogin(email, password);
-  };
-
-  const handleFillDemo = () => {
-    setEmail('demo@dobropay.local');
-    setPassword('local-demo-password');
   };
 
   return (
@@ -70,15 +65,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
             Войти в кабинет
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            full
-            onClick={handleFillDemo}
-          >
-            Подставить демо-данные
-          </Button>
         </div>
       </form>
     </Modal>

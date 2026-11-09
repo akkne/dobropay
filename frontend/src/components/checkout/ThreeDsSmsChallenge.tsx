@@ -15,7 +15,7 @@ export const ThreeDsSmsChallenge: React.FC<ThreeDsSmsChallengeProps> = ({ onSucc
     if (code.trim() === '1234' || code.trim().length >= 4) {
       onSuccess();
     } else {
-      setError('Неверный код подтверждения (для теста введите 1234)');
+      setError('Введите корректный код подтверждения');
     }
   };
 
@@ -33,7 +33,6 @@ export const ThreeDsSmsChallenge: React.FC<ThreeDsSmsChallengeProps> = ({ onSucc
 
       <div className="text-xs text-dp-blue/80 space-y-1">
         <p>Мы отправили SMS с одноразовым паролем на номер <strong className="font-mono">+7 (999) •••-••-42</strong>.</p>
-        <p className="text-[11px] text-dp-blue/50">Для симулятора песочницы используйте код: <strong className="text-dp-blue font-mono">1234</strong></p>
       </div>
 
       <div className="space-y-1">

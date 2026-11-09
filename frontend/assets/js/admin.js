@@ -142,11 +142,6 @@ class MerchantAdminApp {
       }
     });
 
-    document.getElementById('btn-fill-demo-auth')?.addEventListener('click', () => {
-      document.getElementById('login-email').value = 'demo@dobropay.local';
-      document.getElementById('login-password').value = 'local-demo-password';
-    });
-
     // Onboarding Form Steps
     document.getElementById('btn-onboarding-step1-next')?.addEventListener('click', () => {
       this.setOnboardingStep(2);

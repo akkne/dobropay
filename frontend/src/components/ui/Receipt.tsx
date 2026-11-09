@@ -71,7 +71,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
       </div>
 
       <div className="mt-4 pt-3 border-t border-dashed border-dp-line text-[11px] text-center text-dp-blue/60">
-        Чек фискализирован в соответствии с 54-ФЗ. Доступен в электронной форме в реестре ФНС.
+        Чек сформирован и доступен в электронном виде.
       </div>
     </div>
   );

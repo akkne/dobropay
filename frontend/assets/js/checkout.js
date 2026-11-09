@@ -148,12 +148,6 @@ class CheckoutApp {
       });
     }
 
-    // Sandbox Simulator Buttons
-    document.getElementById('sim-success-btn')?.addEventListener('click', () => this.simulate('succeeded'));
-    document.getElementById('sim-hold-btn')?.addEventListener('click', () => this.simulate('waiting_for_capture'));
-    document.getElementById('sim-cancel-btn')?.addEventListener('click', () => this.simulate('canceled'));
-    document.getElementById('sim-reset-btn')?.addEventListener('click', () => this.resetCheckout());
-
     // 3DS Modal Events
     document.getElementById('submit-3ds-btn')?.addEventListener('click', () => {
       this.closeModal('modal-3ds');

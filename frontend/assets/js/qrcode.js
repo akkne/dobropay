@@ -8,7 +8,7 @@ export function renderQrSvg(text, containerElement, size = 200) {
   if (!containerElement) return;
 
   // Simple deterministic hash-based 25x25 matrix pattern with standard QR alignment & finder patterns
-  // to render a reliable visual QR code for demo & sandbox checkout
+  // to render a reliable visual QR code for checkout
   const modules = 25;
   const matrix = Array.from({ length: modules }, () => Array(modules).fill(false));
 

@@ -7,8 +7,8 @@ export interface ShopBasicInfoStepProps {
 
 export const ShopBasicInfoStep: React.FC<ShopBasicInfoStepProps> = ({ onNext }) => {
   const [name, setName] = useState('Магазин мерча Dobropay');
-  const [url, setUrl] = useState('https://store.dobropay.io');
-  const [email, setEmail] = useState('finance@dobropay.io');
+  const [url, setUrl] = useState('https://dobroplay.online');
+  const [email, setEmail] = useState('finance@dobroplay.online');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

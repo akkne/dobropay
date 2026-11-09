@@ -8,7 +8,7 @@ export interface WebhookConfigFormProps {
 }
 
 export const WebhookConfigForm: React.FC<WebhookConfigFormProps> = ({
-  initialUrl = 'https://demo-merchant.local/api/dobropay-webhook',
+  initialUrl = 'https://dobroplay.online/webhooks/payment',
   initialSecret = 'dp_sec_99a8b7c6d5e4f3a2b10987654321fedc',
   onSave
 }) => {

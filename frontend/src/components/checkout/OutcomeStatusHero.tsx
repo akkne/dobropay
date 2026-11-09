@@ -22,7 +22,7 @@ export const OutcomeStatusHero: React.FC<OutcomeStatusHeroProps> = ({ status, am
           {formatMoney(amount)}
         </div>
         <p className="text-xs text-dp-blue/60 max-w-[300px]">
-          Средства успешно списаны. Электронный чек 54-ФЗ сформирован и доступен для скачивания.
+          Средства успешно списаны. Электронный чек доступен для просмотра.
         </p>
       </div>
     );

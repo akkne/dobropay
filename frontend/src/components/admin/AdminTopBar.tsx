@@ -14,7 +14,7 @@ export interface AdminTopBarProps {
 export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   shopName,
   isAuthenticated,
-  userEmail = 'demo@dobropay.local',
+  userEmail = 'manager@dobroplay.online',
   onOpenLogin,
   onLogout
 }) => {
@@ -25,9 +25,6 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-dp-tint rounded-pill border border-dp-line text-xs font-semibold text-dp-blue">
           <span className="w-2 h-2 rounded-full bg-dp-green" />
           <span>{shopName}</span>
-          <span className="text-[10px] bg-dp-blush text-dp-blue font-bold px-1.5 py-0.2 rounded">
-            Тест
-          </span>
         </div>
       </div>
 

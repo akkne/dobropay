@@ -32,7 +32,7 @@ export const OutcomeActions: React.FC<OutcomeActionsProps> = ({
             <line x1="16" y1="17" x2="8" y2="17" />
             <polyline points="10 9 9 9 8 9" />
           </svg>
-          <span>Электронный чек 54-ФЗ</span>
+          <span>Электронный чек</span>
         </Button>
       )}
 

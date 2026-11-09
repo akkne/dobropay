@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://dobroplay.online'),
   title: 'Dobropay — Платёжный шлюз и личный кабинет мерчанта',
   description: 'Приём платежей через СБП, банковские карты и криптовалюту. Hosted Checkout и портал разработчика.',
 };

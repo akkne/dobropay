@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
   USE_MOCKS: 'dp_use_mocks'
 };
 
-const DEFAULT_BASE_URL = 'http://localhost:8080';
+const DEFAULT_BASE_URL = 'https://dobroplay.online';
 
 // Mock initial database
 const MOCK_DB = {
@@ -118,8 +118,8 @@ const MOCK_DB = {
     },
     {
       id: 'k2-uuid',
-      name: 'Тестовый ключ песочницы',
-      prefix: 'dp_test_shop_a_...',
+      name: 'Основной ключ API',
+      prefix: 'dp_live_shop_a_...',
       createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
       status: 'active'
     }

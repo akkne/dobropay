@@ -13,8 +13,8 @@ export const initialMockShop: Shop = {
   legalName: 'ООО «Добропей Диджитал»',
   checkingAccount: '40702810938000012345',
   bik: '044525225',
-  website: 'https://dobropay-merch.ru',
-  adminEmail: 'demo@dobropay.local'
+  website: 'https://dobroplay.online',
+  adminEmail: 'manager@dobroplay.online'
 };
 
 export const initialMockPayments: Payment[] = [
@@ -103,13 +103,6 @@ export const initialMockApiKeys: ApiKey[] = [
     prefix: 'dp_live_8f3a...',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
     status: 'active'
-  },
-  {
-    id: 'k2-uuid',
-    name: 'Тестовый ключ песочницы',
-    prefix: 'dp_test_shop_a_...',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    status: 'active'
   }
 ];
 
@@ -118,7 +111,7 @@ export const initialMockDeliveries: WebhookDelivery[] = [
     id: 'del-001',
     eventType: 'payment.succeeded',
     paymentId: 'd9b3a5b0-8fc2-43bb-a5a1-778899aabbcc',
-    url: 'https://demo-merchant.local/api/dobropay-webhook',
+    url: 'https://dobroplay.online/webhooks/payment',
     status: 'delivered',
     statusCode: 200,
     attempts: 1,
@@ -135,7 +128,7 @@ export const initialMockDeliveries: WebhookDelivery[] = [
     id: 'del-002',
     eventType: 'payment.waiting_for_capture',
     paymentId: 'e1c4a5b0-8fc2-43bb-b5a1-998877aabbdd',
-    url: 'https://demo-merchant.local/api/dobropay-webhook',
+    url: 'https://dobroplay.online/webhooks/payment',
     status: 'delivered',
     statusCode: 200,
     attempts: 1,
@@ -152,7 +145,7 @@ export const initialMockDeliveries: WebhookDelivery[] = [
     id: 'del-003',
     eventType: 'payment.canceled',
     paymentId: 'b4f7a5b0-8fc2-43bb-e5a1-778899aabbcc',
-    url: 'https://demo-merchant.local/api/dobropay-webhook',
+    url: 'https://dobroplay.online/webhooks/payment',
     status: 'retrying',
     statusCode: 503,
     attempts: 2,

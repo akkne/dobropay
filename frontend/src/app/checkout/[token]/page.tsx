@@ -8,7 +8,6 @@ import { MethodTabs } from '../../../components/checkout/MethodTabs';
 import { SbpMethodPanel } from '../../../components/checkout/SbpMethodPanel';
 import { BankCardMethodPanel } from '../../../components/checkout/BankCardMethodPanel';
 import { OutcomeScreen } from '../../../components/checkout/OutcomeScreen';
-import { SandboxSimulatorBar } from '../../../components/checkout/SandboxSimulatorBar';
 import { CheckoutLoadingSkeleton } from '../../../components/checkout/CheckoutLoadingSkeleton';
 import { CheckoutErrorState } from '../../../components/checkout/CheckoutErrorState';
 import { Modal } from '../../../components/ui/Modal';
@@ -109,18 +108,6 @@ function CheckoutContent() {
     }
   };
 
-  const handleSimulate = async (simulatedStatus: PaymentStatus) => {
-    setStatus(simulatedStatus);
-    await apiClient.simulateCheckoutOutcome(tokenParam, simulatedStatus);
-    showToast(`Статус обновлен на: ${simulatedStatus}`);
-  };
-
-  const handleReset = () => {
-    setStatus('pending');
-    setRemainingSeconds(30 * 60);
-    showToast('Состояние сессии оплаты сброшено');
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex items-center justify-center p-4">
@@ -177,11 +164,6 @@ function CheckoutContent() {
           )}
         </main>
       </div>
-
-      <SandboxSimulatorBar
-        onSimulate={handleSimulate}
-        onReset={handleReset}
-      />
 
       <Modal
         isOpen={isReceiptOpen}

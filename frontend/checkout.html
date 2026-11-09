@@ -327,8 +327,8 @@
       </p>
 
       <div class="form-group" style="text-align: left;">
-        <label class="form-label" for="sms-code">Код из SMS (для теста: любой или 1234)</label>
-        <input type="text" id="sms-code" class="form-input mono" placeholder="1234" maxlength="6" value="1234" autofocus />
+        <label class="form-label" for="sms-code">Код из SMS</label>
+        <input type="text" id="sms-code" class="form-input mono" placeholder="Введите код" maxlength="6" autofocus />
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -385,32 +385,10 @@
           <strong id="receipt-amount">1 299,00 ₽</strong>
         </div>
 
-        <div class="receipt-demo-note">Электронный кассовый чек по 54-ФЗ</div>
+        <div class="receipt-demo-note">Электронный кассовый чек</div>
       </div>
     </div>
   </div>
-
-  <!-- Sandbox Floating Simulator Bar -->
-  <aside class="sandbox-bar" aria-label="Панель песочницы разработчика">
-    <div class="sandbox-bar-title">
-      <span class="sandbox-chip">Sandbox</span>
-      <span>Симулятор провайдера и платежей</span>
-    </div>
-    <div class="sandbox-actions">
-      <button type="button" id="sim-success-btn" class="sandbox-btn success" title="Симулировать успешную оплату">
-        ✓ Успех (Succeeded)
-      </button>
-      <button type="button" id="sim-hold-btn" class="sandbox-btn warning" title="Симулировать холд суммы">
-        ⏱ Холд (WaitingForCapture)
-      </button>
-      <button type="button" id="sim-cancel-btn" class="sandbox-btn danger" title="Симулировать отказ">
-        ✕ Отказ (Canceled)
-      </button>
-      <button type="button" id="sim-reset-btn" class="sandbox-btn" title="Сбросить в исходное состояние">
-        ↺ Сбросить
-      </button>
-    </div>
-  </aside>
 
   <!-- Scripts -->
   <script type="module" src="assets/js/checkout.js"></script>

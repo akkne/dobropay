@@ -21,7 +21,7 @@ export default function MockPaymentSimulatorPage() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [selectedBank, setSelectedBank] = useState<string>('Добропей Банк');
-  const [smsCode, setSmsCode] = useState<string>('1234');
+  const [smsCode, setSmsCode] = useState<string>('');
 
   useEffect(() => {
     async function fetchSession() {
@@ -29,12 +29,12 @@ export default function MockPaymentSimulatorPage() {
         const data = await apiClient.getCheckoutSession(tokenParam);
         setSession(data);
       } catch {
-        // Fallback for standalone demo
+        // Fallback when no payment session is available.
         setSession({
           token: tokenParam,
           paymentId: 'demo-payment-id',
           shopId: 'demo-shop-id',
-          shopName: 'Демо-магазин',
+          shopName: 'Магазин',
           orderId: 'ORD-98721',
           amount: 1500,
           currency: 'RUB',
@@ -43,7 +43,7 @@ export default function MockPaymentSimulatorPage() {
           capture: true,
           expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
           createdAt: new Date().toISOString(),
-          description: 'Тестовая оплата заказа'
+          description: 'Оплата заказа'
         });
       } finally {
         setIsLoading(false);
@@ -106,13 +106,11 @@ export default function MockPaymentSimulatorPage() {
               DP
             </div>
             <div>
-              <div className="text-sm font-bold tracking-tight">Dobropay Sandbox Bank</div>
-              <div className="text-[11px] text-slate-400">Тестовый шлюз оплаты</div>
+              <div className="text-sm font-bold tracking-tight">Dobropay</div>
+              <div className="text-[11px] text-slate-400">Подтверждение оплаты</div>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            TEST MODE
-          </span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Оплата</span>
         </div>
 
         {/* Order Details Header */}
@@ -148,26 +146,26 @@ export default function MockPaymentSimulatorPage() {
                     <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">Банковская карта</div>
                     <div className="font-mono text-base tracking-widest mb-4">•••• •••• •••• 4242</div>
                     <div className="flex items-center justify-between text-xs text-slate-300">
-                      <span>DOBROPAY TEST USER</span>
+                      <span>DOBROPAY CLIENT</span>
                       <span>12/28</span>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
                     <label className="text-xs font-semibold text-slate-700 block">
-                      Эмуляция SMS-кода подтверждения
+                      Код подтверждения из SMS
                     </label>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={smsCode}
                         onChange={(e) => setSmsCode(e.target.value)}
-                        placeholder="1234"
+                        placeholder="Код из SMS"
                         className="w-full px-3 py-2 text-sm font-mono tracking-widest text-center rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-dp-blue"
                       />
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      В тестовом режиме подходит любой 4-значный код (по умолчанию 1234).
+                      Введите код, который отправил банк.
                     </p>
                   </div>
                 </div>
@@ -179,7 +177,7 @@ export default function MockPaymentSimulatorPage() {
                       Система быстрых платежей (СБП)
                     </div>
                     <p className="text-xs text-slate-600">
-                      Выберите тестовый банк для подтверждения перевода через мобильное приложение:
+                      Выберите банк для подтверждения перевода через мобильное приложение:
                     </p>
                     <select
                       value={selectedBank}
@@ -238,8 +236,8 @@ export default function MockPaymentSimulatorPage() {
 
         {/* Footer */}
         <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Безопасное тестовое соединение</span>
-          <span>Dobropay Mock Gateway v1.0</span>
+          <span>Безопасное соединение</span>
+          <span>Dobropay</span>
         </div>
       </div>
     </div>

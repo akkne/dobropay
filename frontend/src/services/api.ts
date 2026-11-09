@@ -24,7 +24,7 @@ export interface IApiClient {
   getDeliveries(shopId: string): Promise<WebhookDelivery[]>;
   getReceipts(shopId: string): Promise<FiscalReceipt[]>;
   getApiKeys(shopId: string): Promise<ApiKey[]>;
-  createApiKey(shopId: string, name: string, mode?: 'test' | 'live'): Promise<ApiKey>;
+  createApiKey(shopId: string, name: string): Promise<ApiKey>;
   revokeApiKey(shopId: string, keyId: string): Promise<void>;
   getWebhookConfig(shopId: string): Promise<{ url: string; signingSecret: string; events: string[] }>;
   updateWebhookConfig(shopId: string, config: { url: string; signingSecret: string; events: string[] }): Promise<void>;
@@ -43,7 +43,7 @@ export class DobropayApiClient implements IApiClient {
   private deliveriesState: WebhookDelivery[] = [...initialMockDeliveries];
   private receiptsState: FiscalReceipt[] = [...initialMockReceipts];
   private webhookConfigState = {
-    url: 'https://demo-merchant.local/api/dobropay-webhook',
+    url: 'https://dobroplay.online/webhooks/payment',
     signingSecret: 'dp_sec_99a8b7c6d5e4f3a2b10987654321fedc',
     events: ['payment.succeeded', 'payment.waiting_for_capture', 'payment.canceled', 'refund.succeeded']
   };
@@ -237,7 +237,7 @@ export class DobropayApiClient implements IApiClient {
             id: String(d.id ?? d.event_id ?? `del-${idx}`),
             eventType: String(d.eventType ?? d.event_type ?? 'payment.succeeded'),
             paymentId: String(d.paymentId ?? d.payment_id ?? `pay-${idx}`),
-            url: String(d.url ?? 'https://demo-merchant.local/api/dobropay-webhook'),
+            url: String(d.url ?? 'https://dobroplay.online/webhooks/payment'),
             status: ((d.state ?? d.status) === 'delivered' ? 'delivered' : (d.state ?? d.status) === 'failed' ? 'failed' : 'retrying') as 'delivered' | 'retrying' | 'failed',
             statusCode: Number(d.last_result ?? d.statusCode ?? 200),
             attempts: Number(d.attempts ?? 1),
@@ -321,12 +321,12 @@ export class DobropayApiClient implements IApiClient {
     return [...this.apiKeysState];
   }
 
-  public async createApiKey(shopId: string, name: string, mode: 'test' | 'live' = 'test'): Promise<ApiKey> {
+  public async createApiKey(shopId: string, name: string): Promise<ApiKey> {
     try {
       const response = await fetch(`${this.baseUrl}/v1/developer/shops/${shopId}/keys`, {
         method: 'POST',
         headers: this.getAuthHeaders(true),
-        body: JSON.stringify({ name, mode })
+        body: JSON.stringify({ name, mode: 'live' })
       });
       if (response.ok) {
         const k = await response.json();
@@ -334,7 +334,7 @@ export class DobropayApiClient implements IApiClient {
           id: String(k.id ?? `key-${Date.now()}`),
           name: String(k.name ?? name),
           prefix: String(k.key_prefix ?? k.prefix ?? 'dp_...'),
-          apiKey: String(k.api_key ?? k.apiKey ?? `dp_${mode}_${Date.now()}`),
+          apiKey: String(k.api_key ?? k.apiKey ?? `dp_live_${Date.now()}`),
           createdAt: String(k.created_at ?? k.createdAt ?? new Date().toISOString()),
           status: 'active'
         };
@@ -346,11 +346,11 @@ export class DobropayApiClient implements IApiClient {
     }
 
     const randomSuffix = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    const fullKey = `dp_${mode}_${randomSuffix}`;
+    const fullKey = `dp_live_${randomSuffix}`;
     const newKey: ApiKey = {
       id: `key-${Date.now()}`,
       name,
-      prefix: `dp_${mode}_${randomSuffix.substring(0, 6)}...`,
+      prefix: `dp_live_${randomSuffix.substring(0, 6)}...`,
       apiKey: fullKey,
       createdAt: new Date().toISOString(),
       status: 'active'

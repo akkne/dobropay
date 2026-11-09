@@ -204,8 +204,8 @@ function AdminContent() {
           <div className="space-y-6">
             <ApiKeysSection
               apiKeys={apiKeys}
-              onCreateKey={async (name, mode) => {
-                await apiClient.createApiKey('shop-1', name, mode);
+              onCreateKey={async (name) => {
+                await apiClient.createApiKey('shop-1', name);
                 await loadData();
                 showToast(`Ключ "${name}" успешно создан!`);
               }}

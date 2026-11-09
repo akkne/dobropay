@@ -28,10 +28,6 @@ export const ApplicationStatusStep: React.FC<ApplicationStatusStepProps> = ({ on
           <span className="text-dp-blue/60">Статус:</span>
           <span className="font-bold text-dp-amber">В обработке</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-dp-blue/60">Тестовый режим:</span>
-          <span className="font-semibold text-dp-green">Доступен (Live & Test ключи активны)</span>
-        </div>
       </div>
 
       <div className="pt-2">
