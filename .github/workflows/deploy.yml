@@ -43,4 +43,4 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
       - name: Deploy main
         run: |
-          ssh -o BatchMode=yes root@179.252.219.231 'set -eu; cd /opt/dobropay; git fetch origin main; git checkout -f main; git reset --hard origin/main; COMPOSE_PROFILES=sandbox COMPOSE_PARALLEL_LIMIT=1 docker compose up --build -d --remove-orphans; docker compose ps'
+          ssh -o BatchMode=yes root@179.252.219.231 "set -eu; cd /opt/dobropay; git fetch origin $GITHUB_SHA; git checkout -f main; git reset --hard $GITHUB_SHA; COMPOSE_PROFILES=sandbox COMPOSE_PARALLEL_LIMIT=1 docker compose up --build -d --remove-orphans; docker compose ps"
