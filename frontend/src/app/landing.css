@@ -24,7 +24,7 @@
     .landing .wrap { width: min(1180px, 92%); margin-inline: auto; }
     .landing .page { display: none; }
     .landing #home, .landing .page:target { display: block; }
-    .landing #receipts:target ~ #home, .landing #connect:target ~ #home { display: none; }
+    .landing #receipts:target ~ #home, .landing #connect:target ~ #home, .landing #solutions:target ~ #home { display: none; }
     .landing .header { color: var(--white); background: var(--blue); }
     .landing .topbar {
       display: flex;
@@ -69,9 +69,10 @@
       white-space: nowrap;
     }
     .landing .nav a:hover,
-    .landing:not(:has(#receipts:target, #connect:target)) .nav-home,
+    .landing:not(:has(#receipts:target, #connect:target, #solutions:target)) .nav-home,
     .landing:has(#receipts:target) .nav-receipts,
-    .landing:has(#connect:target) .nav-connect {
+    .landing:has(#connect:target) .nav-connect,
+    .landing:has(#solutions:target) .nav-solutions {
       background: rgba(255, 255, 255, .16);
     }
     .landing .button { border: 1px solid transparent; font-weight: 550; }
@@ -206,6 +207,11 @@
     .landing .total strong { font-size: 30px; letter-spacing: -.05em; }
     .landing .sample { display: block; margin-top: 14px; font: 11px var(--mono); }
 
+    .landing .solutions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 35px; }
+    .landing .solution-card { padding: clamp(22px, 3vw, 34px); background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
+    .landing .solution-card h2 { font-size: 20px; line-height: 1.2; letter-spacing: -.03em; }
+    .landing .solution-card p { margin-top: 10px; color: rgba(9, 49, 141, .76); }
+
     .landing .receipt-note, .landing .step {
       padding: clamp(24px, 3.5vw, 42px);
       background: var(--white);
@@ -311,7 +317,7 @@
       .landing .intro p { max-width: 34ch; font-size: 15px; }
       .landing .hero { background: linear-gradient(var(--blue) 0% 33%, var(--white) 94%); }
       .landing .preview { width: min(90%, 420px); margin-top: 30px; }
-      .landing .papers, .landing .receipt-layout, .landing .step { grid-template-columns: 1fr; }
+      .landing .papers, .landing .receipt-layout, .landing .step, .landing .solutions-grid { grid-template-columns: 1fr; }
       .landing .order, .landing .notice { transform: none; }
       .landing .paper { min-height: 155px; }
       .landing .receipt-layout { gap: 30px; }
