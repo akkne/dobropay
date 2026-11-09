@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { ApiKey } from '../../types/ApiKey';
+import { ApiKeyMode } from '../../types/ApiKeyMode';
 import { ApiKeyRow } from './ApiKeyRow';
 import { CreateApiKeyForm } from './CreateApiKeyForm';
 import { Button } from '../ui/Button';
 
 export interface ApiKeysSectionProps {
   apiKeys: ApiKey[];
-  onCreateKey: (name: string) => void;
+  canCreateLiveKey: boolean;
+  onCreateKey: (name: string, mode: ApiKeyMode) => Promise<void>;
   onRevokeKey: (keyId: string) => void;
 }
 
 export const ApiKeysSection: React.FC<ApiKeysSectionProps> = ({
   apiKeys,
+  canCreateLiveKey,
   onCreateKey,
   onRevokeKey
 }) => {
@@ -35,8 +38,9 @@ export const ApiKeysSection: React.FC<ApiKeysSectionProps> = ({
 
       {isCreating && (
         <CreateApiKeyForm
-          onCreate={(name) => {
-            onCreateKey(name);
+          canCreateLiveKey={canCreateLiveKey}
+          onCreate={async (name, mode) => {
+            await onCreateKey(name, mode);
             setIsCreating(false);
           }}
           onCancel={() => setIsCreating(false)}
