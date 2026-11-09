@@ -19,9 +19,12 @@ var smtpOptions = new SmtpOptions
     EnableSsl = builder.Configuration.GetValue<bool>(ConfigurationKeyNames.SmtpEnableSsl)
 };
 
-if (smtpOptions.Port is < 1 or > 65535 || !smtpOptions.EnableSsl ||
+var sandboxEnabled = builder.Configuration.GetValue<bool>(ConfigurationKeyNames.SandboxEnabled);
+if (smtpOptions.Port is < 1 or > 65535 ||
     string.IsNullOrWhiteSpace(smtpOptions.Host) || string.IsNullOrWhiteSpace(smtpOptions.From) ||
-    string.IsNullOrWhiteSpace(smtpOptions.Username) || string.IsNullOrWhiteSpace(smtpOptions.Password))
+    (!sandboxEnabled && (!smtpOptions.EnableSsl ||
+                         string.IsNullOrWhiteSpace(smtpOptions.Username) ||
+                         string.IsNullOrWhiteSpace(smtpOptions.Password))))
 {
     throw new InvalidOperationException("Valid authenticated TLS SMTP configuration is required");
 }

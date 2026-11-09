@@ -119,6 +119,12 @@ services:
       interval: 3s
       retries: 30
 
+  mailpit:
+    image: axllent/mailpit:v1.27.7
+    profiles: [sandbox]
+    environment:
+      MP_MAX_MESSAGES: 1000
+
   setup:
     build:
       context: .
@@ -238,9 +244,10 @@ services:
       Smtp__Host: ${SMTP_HOST:?Set SMTP_HOST in .env}
       Smtp__Port: ${SMTP_PORT}
       Smtp__From: ${SMTP_FROM:?Set SMTP_FROM in .env}
-      Smtp__Username: ${SMTP_USERNAME:?Set SMTP_USERNAME in .env}
-      Smtp__Password: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
       Smtp__EnableSsl: ${SMTP_ENABLE_SSL}
+      Sandbox__Enabled: ${SANDBOX_ENABLED}
 
   receipts:
     build:
@@ -263,8 +270,8 @@ services:
       Services__Payments: ${PAYMENTS_SERVICE_URL}
       Sandbox__Enabled: ${SANDBOX_ENABLED}
       Fiscal__ProviderMode: ${FISCAL_PROVIDER_MODE:?Set FISCAL_PROVIDER_MODE in .env}
-      Fiscal__CloudKktBaseUrl: ${FISCAL_CLOUD_KKT_BASE_URL:?Set FISCAL_CLOUD_KKT_BASE_URL in .env}
-      Fiscal__CloudKktApiKey: ${FISCAL_CLOUD_KKT_API_KEY:?Set FISCAL_CLOUD_KKT_API_KEY in .env}
+      Fiscal__CloudKktBaseUrl: ${FISCAL_CLOUD_KKT_BASE_URL:-}
+      Fiscal__CloudKktApiKey: ${FISCAL_CLOUD_KKT_API_KEY:-}
       Fiscal__OfdBaseUrl: ${FISCAL_OFD_BASE_URL:-}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in .env}
 
