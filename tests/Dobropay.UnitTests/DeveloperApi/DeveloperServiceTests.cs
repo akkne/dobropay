@@ -45,8 +45,8 @@ public sealed class DeveloperServiceTests
         Assert.Equal("Test Shop", response.Name);
         Assert.Equal(DomainConstants.OwnerRole, response.Role);
         Assert.Equal(VerificationStatuses.Draft, response.Onboarding.VerificationStatus);
-        Assert.StartsWith(DomainConstants.TestApiKeyPrefix, response.DefaultKey.ApiKey, StringComparison.Ordinal);
-        Assert.Equal(DomainConstants.ApiKeyModeTest, response.DefaultKey.Mode);
+        Assert.StartsWith(DomainConstants.TestApiKeyPrefix, response.DefaultKey!.ApiKey, StringComparison.Ordinal);
+        Assert.Equal(DomainConstants.ApiKeyModeTest, response.DefaultKey!.Mode);
 
         Assert.Single(_repository.Shops);
         Assert.Single(_repository.Memberships);
@@ -54,8 +54,8 @@ public sealed class DeveloperServiceTests
         Assert.Single(_repository.Credentials);
 
         var storedKey = _repository.Credentials[0];
-        Assert.NotEqual(response.DefaultKey.ApiKey, storedKey.KeyHash);
-        Assert.Equal(_hashProvider.ComputeSha256Hex(response.DefaultKey.ApiKey), storedKey.KeyHash);
+        Assert.NotEqual(response.DefaultKey!.ApiKey, storedKey.KeyHash);
+        Assert.Equal(_hashProvider.ComputeSha256Hex(response.DefaultKey!.ApiKey), storedKey.KeyHash);
     }
 
     [Fact]
@@ -71,6 +71,24 @@ public sealed class DeveloperServiceTests
 
         Assert.Equal(2, shops.Count);
         Assert.All(shops, s => Assert.Equal(DomainConstants.OwnerRole, s.Role));
+    }
+
+    [Fact]
+    public async Task CreateShop_WithoutSandbox_DoesNotIssueTestKey()
+    {
+        var options = new DeveloperApiOptions
+        {
+            AuthBaseUrl = "http://auth:8080",
+            InternalServiceKey = "test-internal-key",
+            SandboxEnabled = false
+        };
+        var service = new DeveloperService(_repository, _hashProvider, options);
+
+        var result = await service.CreateShopAsync(Guid.NewGuid(), new CreateShopRequest("Shop"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value!.DefaultKey);
+        Assert.Empty(_repository.Credentials);
     }
 
     [Fact]
@@ -300,6 +318,36 @@ public sealed class DeveloperServiceTests
         Assert.Equal(201, result.StatusCode);
         Assert.StartsWith(DomainConstants.TestApiKeyPrefix, result.Value!.ApiKey, StringComparison.Ordinal);
         Assert.Equal(DomainConstants.ApiKeyModeTest, result.Value.Mode);
+    }
+
+    [Fact]
+    public async Task CreateApiKey_Test_Forbidden_WhenSandboxDisabled()
+    {
+        var options = new DeveloperApiOptions
+        {
+            AuthBaseUrl = "http://auth:8080",
+            InternalServiceKey = "test-internal-key",
+            SandboxEnabled = false
+        };
+        var service = new DeveloperService(_repository, _hashProvider, options);
+        var accountId = Guid.NewGuid();
+        var shopId = Guid.NewGuid();
+        _repository.Memberships.Add(new ShopMembership
+        {
+            ShopId = shopId,
+            AccountId = accountId,
+            Role = DomainConstants.OwnerRole
+        });
+
+        var result = await service.CreateApiKeyAsync(
+            accountId,
+            shopId,
+            new CreateApiKeyRequest("Key", DomainConstants.ApiKeyModeTest),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(400, result.StatusCode);
+        Assert.Empty(_repository.Credentials);
     }
 
     [Fact]

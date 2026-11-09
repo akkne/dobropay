@@ -19,7 +19,6 @@ public sealed class ReceiptWorker(
 {
     private const int ReceiveTimeoutMilliseconds = 100;
     private const int CycleDelayMilliseconds = 500;
-    private const string DemoEmailSubject = "Демо-квитанция Dobropay";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -38,7 +37,6 @@ public sealed class ReceiptWorker(
                     subscriber.Commit(message);
                 }
 
-                await SendNextDemoReceiptAsync(stoppingToken);
             }
             catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
             {
@@ -183,9 +181,13 @@ public sealed class ReceiptWorker(
 
     private async Task SendFiscalReceiptEmailAsync(FiscalReceipt receipt, CancellationToken cancellationToken)
     {
-        var recipient = !string.IsNullOrWhiteSpace(receipt.CustomerEmail)
-            ? receipt.CustomerEmail
-            : options.DemoReceiptEmail;
+        if (string.IsNullOrWhiteSpace(receipt.CustomerEmail))
+        {
+            logger.LogWarning("Receipt {ReceiptId} has no customer email", receipt.Id);
+            return;
+        }
+
+        var recipient = receipt.CustomerEmail;
 
         var rubles = receipt.TotalAmount / 100;
         var kopecks = Math.Abs(receipt.TotalAmount % 100);
@@ -226,49 +228,4 @@ public sealed class ReceiptWorker(
         }
     }
 
-    private async Task SendNextDemoReceiptAsync(CancellationToken cancellationToken)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IReceiptsRepository>();
-
-        var receipt = await repository.AcquireNextPendingReceiptAsync(cancellationToken);
-        if (receipt is null)
-        {
-            return;
-        }
-
-        var client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Add(HttpHeaderNames.InternalKey, options.InternalServiceKey);
-
-        string finalState;
-        try
-        {
-            using var response = await client.PostAsJsonAsync(
-                options.EmailServiceBaseUrl.TrimEnd('/') + InternalRouteNames.SendEmail,
-                new
-                {
-                    ReceiptId = receipt.Id,
-                    To = options.DemoReceiptEmail,
-                    Subject = DemoEmailSubject,
-                    Text = $"Демонстрационная квитанция. Платёж {receipt.PaymentId}, сумма {receipt.Amount} копеек {receipt.Currency}. Не является фискальным чеком."
-                },
-                cancellationToken);
-            finalState = response.IsSuccessStatusCode
-                ? ReceiptsSchemaConstants.EmailStateSent
-                : ReceiptsSchemaConstants.EmailStateFailed;
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Email outcome unknown for receipt {ReceiptId}", receipt.Id);
-            return;
-        }
-
-        await repository.CompleteReceiptEmailAsync(receipt.Id, finalState, cancellationToken);
-        logger.LogInformation(
-            "Demo receipt email {ReceiptId} shop {ShopId} payment {PaymentId} state {State}",
-            receipt.Id,
-            receipt.ShopId,
-            receipt.PaymentId,
-            finalState);
-    }
 }

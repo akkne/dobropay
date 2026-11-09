@@ -7,7 +7,6 @@ public sealed class FakeReceiptsRepository : IReceiptsRepository
 {
     public List<FiscalReceipt> FiscalReceipts { get; } = new();
     public List<ReceiptInbox> Inboxes { get; } = new();
-    public List<DemoReceipt> DemoReceipts { get; } = new();
 
     public Task<bool> HasInboxEventAsync(Guid eventId, CancellationToken cancellationToken) =>
         Task.FromResult(Inboxes.Any(x => x.EventId == eventId));
@@ -76,69 +75,4 @@ public sealed class FakeReceiptsRepository : IReceiptsRepository
         return Task.FromResult<IReadOnlyList<FiscalReceipt>>(list);
     }
 
-    public Task<IReadOnlyList<DemoReceiptView>> ListReceiptsByShopAsync(Guid shopId, CancellationToken cancellationToken)
-    {
-        var list = DemoReceipts
-            .Where(x => x.ShopId == shopId)
-            .Select(x => new DemoReceiptView(x.Id, x.PaymentId, x.Amount, x.Currency, x.EmailState))
-            .ToList();
-        return Task.FromResult<IReadOnlyList<DemoReceiptView>>(list);
-    }
-
-    public Task SaveIncomingPaymentEventAsync(
-        Guid eventId,
-        Guid shopId,
-        Guid paymentId,
-        bool isSucceeded,
-        long amount,
-        string currency,
-        CancellationToken cancellationToken)
-    {
-        Inboxes.Add(new ReceiptInbox
-        {
-            EventId = eventId,
-            ShopId = shopId,
-            PaymentId = paymentId,
-            ReceivedAt = DateTimeOffset.UtcNow
-        });
-
-        if (isSucceeded)
-        {
-            DemoReceipts.Add(new DemoReceipt
-            {
-                Id = Guid.NewGuid(),
-                ShopId = shopId,
-                PaymentId = paymentId,
-                EventId = eventId,
-                Amount = amount,
-                Currency = currency,
-                EmailState = ReceiptsSchemaConstants.EmailStatePending,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task<DemoReceipt?> AcquireNextPendingReceiptAsync(CancellationToken cancellationToken)
-    {
-        var receipt = DemoReceipts.FirstOrDefault(x => x.EmailState == ReceiptsSchemaConstants.EmailStatePending);
-        if (receipt is not null)
-        {
-            receipt.EmailState = ReceiptsSchemaConstants.EmailStateSending;
-        }
-
-        return Task.FromResult(receipt);
-    }
-
-    public Task CompleteReceiptEmailAsync(Guid receiptId, string finalState, CancellationToken cancellationToken)
-    {
-        var receipt = DemoReceipts.FirstOrDefault(x => x.Id == receiptId);
-        if (receipt is not null)
-        {
-            receipt.EmailState = finalState;
-        }
-
-        return Task.CompletedTask;
-    }
 }

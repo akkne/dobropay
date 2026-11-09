@@ -17,13 +17,26 @@ var options = new ReceiptsOptions
 {
     EmailServiceBaseUrl = RequireConfig(ConfigurationKeyNames.ServiceEmailUrl),
     InternalServiceKey = RequireConfig(ConfigurationKeyNames.InternalServiceKey),
-    DemoReceiptEmail = RequireConfig(ConfigurationKeyNames.DemoReceiptEmail),
     PaymentsServiceBaseUrl = RequireConfig(ConfigurationKeyNames.ServicePaymentsUrl),
-    FiscalProviderMode = builder.Configuration[ConfigurationKeyNames.FiscalProviderMode] ?? FiscalProviderModes.Sandbox,
+    FiscalProviderMode = RequireConfig(ConfigurationKeyNames.FiscalProviderMode),
     FiscalCloudKktBaseUrl = builder.Configuration[ConfigurationKeyNames.FiscalCloudKktBaseUrl],
     FiscalCloudKktApiKey = builder.Configuration[ConfigurationKeyNames.FiscalCloudKktApiKey],
     FiscalOfdBaseUrl = builder.Configuration[ConfigurationKeyNames.FiscalOfdBaseUrl]
 };
+
+if (!builder.Configuration.GetValue<bool>(ConfigurationKeyNames.SandboxEnabled) &&
+    !string.Equals(options.FiscalProviderMode, FiscalProviderModes.CloudKkt, StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException("A fiscal provider is required when sandbox is disabled");
+}
+
+if (string.Equals(options.FiscalProviderMode, FiscalProviderModes.CloudKkt, StringComparison.OrdinalIgnoreCase) &&
+    (string.IsNullOrWhiteSpace(options.FiscalCloudKktApiKey) ||
+     !Uri.TryCreate(options.FiscalCloudKktBaseUrl, UriKind.Absolute, out var fiscalUri) ||
+     fiscalUri.Scheme != Uri.UriSchemeHttps))
+{
+    throw new InvalidOperationException("Valid HTTPS fiscal provider configuration is required");
+}
 
 builder.Services.AddSingleton(options);
 builder.Services.AddPostgresDbContext<ReceiptsDbContext>(builder.Configuration);

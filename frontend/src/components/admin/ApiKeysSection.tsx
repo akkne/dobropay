@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 
 export interface ApiKeysSectionProps {
   apiKeys: ApiKey[];
-  onCreateKey: (name: string, mode?: 'test' | 'live') => void;
+  onCreateKey: (name: string) => void;
   onRevokeKey: (keyId: string) => void;
 }
 
@@ -35,8 +35,8 @@ export const ApiKeysSection: React.FC<ApiKeysSectionProps> = ({
 
       {isCreating && (
         <CreateApiKeyForm
-          onCreate={(name, mode) => {
-            onCreateKey(name, mode);
+          onCreate={(name) => {
+            onCreateKey(name);
             setIsCreating(false);
           }}
           onCancel={() => setIsCreating(false)}

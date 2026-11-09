@@ -12,7 +12,6 @@ export interface PaymentsTableProps {
   onCapture: (payment: Payment) => void;
   onCancel: (payment: Payment) => void;
   onRefund: (payment: Payment) => void;
-  onCreatePayment: () => void;
 }
 
 export const PaymentsTable: React.FC<PaymentsTableProps> = ({
@@ -20,8 +19,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   onSelectPayment,
   onCapture,
   onCancel,
-  onRefund,
-  onCreatePayment
+  onRefund
 }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,7 +49,6 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
         onSearchChange={setSearch}
         onStatusChange={setStatusFilter}
         onMethodChange={setMethodFilter}
-        onCreatePayment={onCreatePayment}
       />
 
       <div className="overflow-x-auto">

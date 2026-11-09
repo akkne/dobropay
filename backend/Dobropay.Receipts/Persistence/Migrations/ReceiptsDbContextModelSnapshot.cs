@@ -22,53 +22,6 @@ namespace Dobropay.Receipts.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Dobropay.Receipts.Persistence.DemoReceipt", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<long>("Amount")
-                        .HasColumnType("bigint")
-                        .HasColumnName("amount");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("currency");
-
-                    b.Property<string>("EmailState")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("email_state");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("event_id");
-
-                    b.Property<Guid>("PaymentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("payment_id");
-
-                    b.Property<Guid>("ShopId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("shop_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EventId")
-                        .IsUnique();
-
-                    b.HasIndex("ShopId", "PaymentId");
-
-                    b.ToTable("demo_receipts", (string)null);
-                });
-
             modelBuilder.Entity("Dobropay.Receipts.Persistence.FiscalReceipt", b =>
                 {
                     b.Property<Guid>("Id")

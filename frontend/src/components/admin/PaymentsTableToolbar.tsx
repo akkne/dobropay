@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '../ui/Button';
 
 export interface PaymentsTableToolbarProps {
   searchQuery: string;
@@ -8,7 +7,6 @@ export interface PaymentsTableToolbarProps {
   onSearchChange: (query: string) => void;
   onStatusChange: (status: string) => void;
   onMethodChange: (method: string) => void;
-  onCreatePayment: () => void;
 }
 
 export const PaymentsTableToolbar: React.FC<PaymentsTableToolbarProps> = ({
@@ -17,8 +15,7 @@ export const PaymentsTableToolbar: React.FC<PaymentsTableToolbarProps> = ({
   methodFilter,
   onSearchChange,
   onStatusChange,
-  onMethodChange,
-  onCreatePayment
+  onMethodChange
 }) => {
   return (
     <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pb-2">
@@ -60,17 +57,6 @@ export const PaymentsTableToolbar: React.FC<PaymentsTableToolbarProps> = ({
         </select>
       </div>
 
-      <Button
-        variant="primary-blue"
-        size="sm"
-        onClick={onCreatePayment}
-      >
-        <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        <span>Создать платёж</span>
-      </Button>
     </div>
   );
 };

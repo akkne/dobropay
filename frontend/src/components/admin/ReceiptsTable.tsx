@@ -13,7 +13,7 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onPrevie
       <div className="pb-3 border-b border-dp-line">
         <h3 className="text-sm font-bold text-dp-blue">Реестр фискальных чеков (54-ФЗ)</h3>
         <p className="text-xs text-dp-blue/60">
-          Все чеки автоматически фискализируются через облачную кассу Добропей и регистрируются в ОФД / ФНС
+          Фискальные документы по платежам магазина
         </p>
       </div>
 

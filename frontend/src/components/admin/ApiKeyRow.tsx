@@ -13,7 +13,8 @@ export const ApiKeyRow: React.FC<ApiKeyRowProps> = ({ apiKey, onRevoke }) => {
   const [showFull, setShowFull] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(apiKey.apiKey || apiKey.prefix);
+    if (!apiKey.apiKey) return;
+    navigator.clipboard.writeText(apiKey.apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -29,7 +30,7 @@ export const ApiKeyRow: React.FC<ApiKeyRowProps> = ({ apiKey, onRevoke }) => {
         </div>
         <div className="flex items-center gap-2">
           <code className="text-xs font-mono text-dp-blue font-medium bg-white px-2 py-1 rounded border border-dp-line">
-            {showFull ? apiKey.apiKey || apiKey.prefix : apiKey.prefix}
+            {showFull && apiKey.apiKey ? apiKey.apiKey : apiKey.prefix}
           </code>
           {apiKey.apiKey && (
             <button
@@ -47,9 +48,9 @@ export const ApiKeyRow: React.FC<ApiKeyRowProps> = ({ apiKey, onRevoke }) => {
       </div>
 
       <div className="flex items-center gap-2 self-end sm:self-center">
-        <Button variant="outline" size="sm" onClick={handleCopy}>
+        {apiKey.apiKey && <Button variant="outline" size="sm" onClick={handleCopy}>
           {copied ? 'Скопировано!' : 'Копировать'}
-        </Button>
+        </Button>}
         <button
           type="button"
           onClick={() => onRevoke(apiKey.id)}

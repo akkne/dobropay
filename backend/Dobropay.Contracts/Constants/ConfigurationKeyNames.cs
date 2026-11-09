@@ -22,7 +22,9 @@ public static class ConfigurationKeyNames
     public const string SmtpHost = "Smtp:Host";
     public const string SmtpPort = "Smtp:Port";
     public const string SmtpFrom = "Smtp:From";
-    public const string DemoReceiptEmail = "Demo:ReceiptEmail";
+    public const string SmtpUsername = "Smtp:Username";
+    public const string SmtpPassword = "Smtp:Password";
+    public const string SmtpEnableSsl = "Smtp:EnableSsl";
     public const string DesignTimeConnectionEnv = "DESIGN_TIME_CONNECTION_STRING";
     public const string ReconciliationIntervalSeconds = "Reconciliation:IntervalSeconds";
     public const string ReconciliationAttemptStaleSeconds = "Reconciliation:AttemptStaleSeconds";

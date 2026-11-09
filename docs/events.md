@@ -51,7 +51,7 @@
    - Фоновый воркер `PaymentEventWorker` выбирает неопубликованное событие с блокировкой `FOR UPDATE SKIP LOCKED`, публикует его через `IEventPublisher` (`Acks.All`, `EnableIdempotence = true`) и помечает `published = true`.
 2. **Потребление и ручной коммит Offset**:
    - Все потребители работают с `EnableAutoCommit = false` и `EnableAutoOffsetStore = false`.
-   - Смещение (`Commit`) подтверждается **только после** успешной фиксации транзакции в собственной БД сервиса (запись в `notification_inbox` + создание `webhook_deliveries` либо запись в `receipt_inbox` + создание `demo_receipts`).
+   - Смещение (`Commit`) подтверждается **только после** успешной фиксации транзакции в собственной БД сервиса (запись в `notification_inbox` + создание `webhook_deliveries` либо запись в `receipt_inbox` и обработка фискального документа).
 3. **Дедупликация и защита от повторов**:
    - Таблицы `provider_inbox`, `notification_inbox` и `receipt_inbox` имеют уникальные ограничения по идентификатору события (`provider_event_id` / `event_id`). Повторная доставка того же сообщения из Kafka обрабатывается идемпотентно (`ON CONFLICT DO NOTHING`) и не создаёт дублей бизнес-операций, webhook-доставок или квитанций.
 4. **Неопределённый исход SMTP в Receipts**:

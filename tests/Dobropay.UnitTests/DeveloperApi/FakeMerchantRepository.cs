@@ -70,13 +70,16 @@ public sealed class FakeMerchantRepository : IMerchantRepository
         Shop shop,
         ShopMembership membership,
         ShopOnboardingProfile profile,
-        ApiCredential defaultKey,
+        ApiCredential? defaultKey,
         CancellationToken cancellationToken)
     {
         Shops.Add(shop);
         Memberships.Add(membership);
         OnboardingProfiles.Add(profile);
-        Credentials.Add(defaultKey);
+        if (defaultKey is not null)
+        {
+            Credentials.Add(defaultKey);
+        }
         return Task.CompletedTask;
     }
 

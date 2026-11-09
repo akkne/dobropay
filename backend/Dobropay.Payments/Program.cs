@@ -80,6 +80,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(swagger => swagger.OperationFilter<PaymentHeadersFilter>());
 
 var app = builder.Build();
+app.UseMiddleware<PaymentAvailabilityMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapPaymentsEndpoints(options);

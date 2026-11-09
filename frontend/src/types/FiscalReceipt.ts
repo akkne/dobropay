@@ -10,12 +10,11 @@ export interface FiscalReceipt {
   paymentId: string;
   orderNumber: string;
   amount: number;
-  fiscalStatus: 'succeeded' | 'pending';
+  fiscalStatus: string;
   fnNumber: string;
   fdNumber: string;
   fpdNumber: string;
   customerEmail: string;
-  emailStatus: 'sent' | 'sending';
   createdAt: string;
   items: FiscalReceiptItem[];
 }

@@ -47,34 +47,34 @@ public sealed class DeveloperService(
             UpdatedAt = now
         };
 
-        var rawKey = GenerateRawKey(DomainConstants.TestApiKeyPrefix);
-        var keyHash = hashProvider.ComputeSha256Hex(rawKey);
-        var keyPrefix = BuildKeyPrefix(rawKey);
-        var keyMask = BuildKeyMask(rawKey);
-
-        var defaultKey = new ApiCredential
+        ApiCredential? defaultKey = null;
+        ApiKeyCreatedDto? keyDto = null;
+        if (options.SandboxEnabled)
         {
-            Id = Guid.NewGuid(),
-            ShopId = shopId,
-            KeyHash = keyHash,
-            Name = "Default Test Key",
-            Mode = DomainConstants.ApiKeyModeTest,
-            KeyPrefix = keyPrefix,
-            CreatedAt = now
-        };
+            var rawKey = GenerateRawKey(DomainConstants.TestApiKeyPrefix);
+            defaultKey = new ApiCredential
+            {
+                Id = Guid.NewGuid(),
+                ShopId = shopId,
+                KeyHash = hashProvider.ComputeSha256Hex(rawKey),
+                Name = "Default Test Key",
+                Mode = DomainConstants.ApiKeyModeTest,
+                KeyPrefix = BuildKeyPrefix(rawKey),
+                CreatedAt = now
+            };
+            keyDto = new ApiKeyCreatedDto(
+                defaultKey.Id,
+                defaultKey.Name,
+                defaultKey.Mode,
+                rawKey,
+                defaultKey.KeyPrefix,
+                BuildKeyMask(rawKey),
+                defaultKey.CreatedAt);
+        }
 
         await repository.CreateShopWithDefaultsAsync(shop, membership, profile, defaultKey, cancellationToken);
 
         var onboardingDto = MapToOnboardingDto(profile);
-        var keyDto = new ApiKeyCreatedDto(
-            defaultKey.Id,
-            defaultKey.Name,
-            defaultKey.Mode,
-            rawKey,
-            defaultKey.KeyPrefix,
-            keyMask,
-            defaultKey.CreatedAt);
-
         return DeveloperOperationResult<CreateShopResponse>.Success(
             new CreateShopResponse(shop.Id, shop.Name, membership.Role, onboardingDto, keyDto),
             201);
@@ -287,6 +287,14 @@ public sealed class DeveloperService(
                 403,
                 ErrorCodes.Forbidden,
                 "Role does not have permission to manage API keys.");
+        }
+
+        if (!options.SandboxEnabled && request.Mode == DomainConstants.ApiKeyModeTest)
+        {
+            return DeveloperOperationResult<ApiKeyCreatedDto>.Failure(
+                400,
+                ErrorCodes.InvalidKeyMode,
+                "Test API keys are unavailable.");
         }
 
         if (request.Mode != DomainConstants.ApiKeyModeTest &&

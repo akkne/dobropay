@@ -1,7 +1,7 @@
 export interface Shop {
   id: string;
   name: string;
-  status: 'active' | 'under_review' | 'blocked';
+  status: string;
   inn?: string;
   ogrn?: string;
   legalName?: string;
