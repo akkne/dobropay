@@ -126,8 +126,9 @@ export default function DevelopersPage() {
 
           <section id="quickstart" className="docs-section mt-16 scroll-mt-24 border-t border-slate-200 pt-10">
             <SectionTitle>Быстрый старт</SectionTitle>
-            <p className="mb-5 max-w-3xl leading-7">Отправляйте запросы на <code>https://dobroplay.online</code> с API-ключом магазина в заголовке.</p>
-            <CodeBlock>{`curl -X POST https://dobroplay.online/v1/payments \\
+            <p className="mb-5 max-w-3xl leading-7">Укажите в <code>DOBROPAY_URL</code> адрес сайта, на котором открыта документация, и передавайте API-ключ магазина в заголовке.</p>
+            <CodeBlock>{`DOBROPAY_URL=https://example.com # замените адресом вашего сайта Dobropay
+curl -X POST "$DOBROPAY_URL/v1/payments" \\
   -H 'X-Api-Key: <api-key>' \\
   -H 'Idempotency-Key: order-42' \\
   -H 'Content-Type: application/json' \\
@@ -191,8 +192,8 @@ export default function DevelopersPage() {
             <SectionTitle>Спецификация OpenAPI</SectionTitle>
             <p className="mb-5 max-w-3xl leading-7">Swagger UI сервиса платежей описывает его методы, параметры запросов и форматы ответов.</p>
             <div className="flex flex-wrap gap-3">
-              <a className="docs-action docs-action-primary rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700" href="https://dobroplay.online/swagger" target="_blank" rel="noreferrer">Открыть Swagger UI →</a>
-              <a className="docs-action docs-action-secondary rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50" href="https://dobroplay.online/swagger/v1/swagger.json" target="_blank" rel="noreferrer">Скачать JSON-схему</a>
+              <a className="docs-action docs-action-primary rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700" href="/swagger" target="_blank" rel="noreferrer">Открыть Swagger UI →</a>
+              <a className="docs-action docs-action-secondary rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50" href="/swagger/v1/swagger.json" target="_blank" rel="noreferrer">Скачать JSON-схему</a>
             </div>
           </section>
 
@@ -226,7 +227,7 @@ X-Dobropay-Signature: sha256=<hex>
             <div id="requests" className="scroll-mt-24">
               <h3 className="mb-4 text-xl font-semibold text-slate-950">Формат взаимодействия</h3>
               <ul className="list-disc space-y-2 pl-5 leading-7">
-                <li>Базовый адрес API: <code>https://dobroplay.online</code>.</li>
+                <li>Базовый адрес API совпадает с адресом этого сайта.</li>
                 <li>Тело запроса и ответа — JSON; для запросов с телом указывайте <code>Content-Type: application/json</code>.</li>
                 <li>Сумма — положительное целое число в копейках. Поддерживается валюта <code>RUB</code>.</li>
                 <li>Идентификаторы платежей и возвратов передаются в формате UUID.</li>
