@@ -1,8 +1,7 @@
-using Dobropay.Contracts.Security;
 using Dobropay.Setup.Configuration;
 using Dobropay.Setup.Services;
 
 var options = SetupOptions.LoadFromEnvironment();
-var seeder = new EfCoreDatabaseSeeder(options, new Sha256HashProvider());
+var seeder = new EfCoreDatabaseSeeder(options);
 await seeder.MigrateAndSeedAllAsync(CancellationToken.None);
-Console.WriteLine("Five isolated service databases migrated and seeded via EF Core.");
+Console.WriteLine("Five isolated service databases migrated via EF Core.");
