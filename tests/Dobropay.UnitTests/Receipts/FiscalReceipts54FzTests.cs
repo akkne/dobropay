@@ -125,7 +125,6 @@ public sealed class FiscalReceipts54FzTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = "test-key",
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = "http://payments:8080",
             FiscalCloudKktBaseUrl = "http://cloud-kkt:8080",
             FiscalCloudKktApiKey = "cloud-api-key"

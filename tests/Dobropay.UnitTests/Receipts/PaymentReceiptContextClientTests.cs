@@ -56,7 +56,6 @@ public sealed class PaymentReceiptContextClientTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = ExpectedInternalKey,
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = PaymentsBaseUrl
         };
 
@@ -92,7 +91,6 @@ public sealed class PaymentReceiptContextClientTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = ExpectedInternalKey,
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = PaymentsBaseUrl
         };
 
@@ -115,7 +113,6 @@ public sealed class PaymentReceiptContextClientTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = ExpectedInternalKey,
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = PaymentsBaseUrl
         };
 

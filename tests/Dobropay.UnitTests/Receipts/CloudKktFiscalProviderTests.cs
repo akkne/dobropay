@@ -19,7 +19,6 @@ public sealed class CloudKktFiscalProviderTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = "key",
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = "http://payments:8080",
             FiscalCloudKktBaseUrl = ""
         };
@@ -53,7 +52,6 @@ public sealed class CloudKktFiscalProviderTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = "key",
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = "http://payments:8080",
             FiscalCloudKktBaseUrl = TestCloudKktUrl,
             FiscalCloudKktApiKey = TestApiKey
@@ -107,7 +105,6 @@ public sealed class CloudKktFiscalProviderTests
         {
             EmailServiceBaseUrl = "http://email:8080",
             InternalServiceKey = "key",
-            DemoReceiptEmail = "demo@example.com",
             PaymentsServiceBaseUrl = "http://payments:8080",
             FiscalCloudKktBaseUrl = TestCloudKktUrl,
             FiscalCloudKktApiKey = TestApiKey
