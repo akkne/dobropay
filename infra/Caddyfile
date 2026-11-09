@@ -46,3 +46,7 @@
         reverse_proxy frontend:3000
     }
 }
+
+{$WWW_DOMAIN:localhost} {
+    redir https://{$DOMAIN}{uri} permanent
+}
