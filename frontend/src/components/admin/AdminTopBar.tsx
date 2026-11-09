@@ -33,6 +33,12 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
 
       <div className="flex items-center gap-2.5">
         <Link
+          href="/developers"
+          className="inline-flex items-center px-3 py-1.5 rounded-pill text-xs font-semibold text-dp-blue hover:bg-dp-tint transition-colors"
+        >
+          Документация API
+        </Link>
+        <Link
           href="/checkout/demo-checkout-token-2026"
           target="_blank"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium border border-dp-line bg-transparent text-dp-blue hover:bg-dp-tint transition-colors"
