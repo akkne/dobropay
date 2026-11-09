@@ -14,7 +14,7 @@ public interface IMerchantRepository
         Shop shop,
         ShopMembership membership,
         ShopOnboardingProfile profile,
-        ApiCredential defaultKey,
+        ApiCredential? defaultKey,
         CancellationToken cancellationToken);
     Task<ShopOnboardingProfile?> GetOnboardingProfileAsync(Guid shopId, CancellationToken cancellationToken);
     Task SaveOnboardingProfileAsync(ShopOnboardingProfile profile, CancellationToken cancellationToken);

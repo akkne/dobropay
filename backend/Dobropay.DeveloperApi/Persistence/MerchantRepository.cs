@@ -73,13 +73,16 @@ public sealed class MerchantRepository(MerchantDbContext dbContext) : IMerchantR
         Shop shop,
         ShopMembership membership,
         ShopOnboardingProfile profile,
-        ApiCredential defaultKey,
+        ApiCredential? defaultKey,
         CancellationToken cancellationToken)
     {
         await dbContext.Shops.AddAsync(shop, cancellationToken);
         await dbContext.ShopMemberships.AddAsync(membership, cancellationToken);
         await dbContext.ShopOnboardingProfiles.AddAsync(profile, cancellationToken);
-        await dbContext.ApiCredentials.AddAsync(defaultKey, cancellationToken);
+        if (defaultKey is not null)
+        {
+            await dbContext.ApiCredentials.AddAsync(defaultKey, cancellationToken);
+        }
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
