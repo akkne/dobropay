@@ -97,7 +97,7 @@ export default function MockPaymentSimulatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col items-center justify-center p-4">
+    <div className="simulator-page min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         {/* Header */}
         <div className="bg-slate-900 text-white px-6 py-5 flex items-center justify-between">

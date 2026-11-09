@@ -19,7 +19,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   onLogout
 }) => {
   return (
-    <header className="bg-white border-b border-dp-line px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+    <header className="admin-topbar bg-white border-b border-dp-line px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
       <div className="flex items-center gap-4">
         <Brand size={24} />
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-dp-tint rounded-pill border border-dp-line text-xs font-semibold text-dp-blue">
@@ -33,7 +33,8 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           href="/developers"
           className="inline-flex items-center px-3 py-1.5 rounded-pill text-xs font-semibold text-dp-blue hover:bg-dp-tint transition-colors"
         >
-          Документация API
+          <span className="hidden sm:inline">Документация API</span>
+          <span className="sm:hidden">API</span>
         </Link>
         <Link
           href="/checkout/demo-checkout-token-2026"

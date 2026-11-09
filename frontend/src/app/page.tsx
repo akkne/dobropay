@@ -165,7 +165,7 @@ function AdminContent() {
 
       <AdminNavBar activeTab={activeTab} onChange={setActiveTab} />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="admin-main flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* VIEW 1: PAYMENTS */}
         {activeTab === 'payments' && (
           <div className="space-y-6">

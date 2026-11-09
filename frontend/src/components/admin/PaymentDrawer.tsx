@@ -31,10 +31,10 @@ export const PaymentDrawer: React.FC<PaymentDrawerProps> = ({
       <div className="absolute inset-0 bg-black/30 backdrop-blur-xs transition-opacity" />
 
       <div
-        className="fixed inset-y-0 right-0 max-w-full flex pl-10"
+        className="payment-drawer fixed inset-y-0 right-0 max-w-full flex pl-10"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-screen max-w-md bg-white border-l border-dp-line shadow-popover p-6 flex flex-col justify-between overflow-y-auto">
+        <div className="payment-drawer-panel w-screen max-w-md bg-white border-l border-dp-line shadow-popover p-6 flex flex-col justify-between overflow-y-auto">
           <div className="space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-dp-line">
               <div>

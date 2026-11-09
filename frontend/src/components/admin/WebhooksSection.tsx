@@ -36,8 +36,8 @@ export const WebhooksSection: React.FC<WebhooksSectionProps> = ({
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="admin-table-scroll overflow-x-auto">
+          <table className="admin-data-table w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-dp-line text-dp-blue/60 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-2.5 px-3">Статус</th>

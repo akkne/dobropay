@@ -128,7 +128,7 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dp-tint to-white flex flex-col items-center justify-start px-4 py-8 md:py-12 pb-24">
+    <div className="checkout-page min-h-screen bg-gradient-to-b from-dp-tint to-white flex flex-col items-center justify-start px-4 py-8 md:py-12 pb-24">
       <div className="w-full max-w-[500px] flex flex-col gap-4">
         <CheckoutHeader remainingSeconds={remainingSeconds} />
 

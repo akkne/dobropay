@@ -56,7 +56,7 @@ export const AdminNavBar: React.FC<AdminNavBarProps> = ({ activeTab, onChange })
   ];
 
   return (
-    <nav className="border-b border-dp-line bg-white px-4 md:px-8 overflow-x-auto" aria-label="Разделы кабинета">
+    <nav className="admin-nav border-b border-dp-line bg-white px-4 md:px-8 overflow-x-auto" aria-label="Разделы кабинета">
       <ul className="flex items-center gap-1 md:gap-3 py-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

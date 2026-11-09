@@ -33,7 +33,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full bg-white rounded-card shadow-popover border border-dp-line p-6 md:p-8 max-h-[92vh] overflow-y-auto"
+        className="modal-shell relative w-full bg-white rounded-card shadow-popover border border-dp-line p-6 md:p-8 max-h-[92vh] overflow-y-auto"
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
