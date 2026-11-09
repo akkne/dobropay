@@ -57,9 +57,13 @@ public sealed class CloudKktFiscalProvider(
             }
 
             var doc = await response.Content.ReadFromJsonAsync<CloudKktResponse>(JsonOptions, cancellationToken);
-            if (doc is null)
+            if (doc is null || doc.FiscalDocumentNumber <= 0 ||
+                string.IsNullOrWhiteSpace(doc.FiscalStorageNumber) ||
+                string.IsNullOrWhiteSpace(doc.FiscalAttribute) ||
+                string.IsNullOrWhiteSpace(doc.QrPayload) ||
+                doc.RegisteredAt is null)
             {
-                return FiscalRegistrationResult.Failed("Cloud KKT returned empty response");
+                return FiscalRegistrationResult.Failed("Cloud KKT returned incomplete fiscal data");
             }
 
             return FiscalRegistrationResult.Succeeded(
@@ -68,7 +72,7 @@ public sealed class CloudKktFiscalProvider(
                 doc.FiscalAttribute,
                 doc.FiscalSign,
                 doc.QrPayload,
-                doc.RegisteredAt ?? DateTimeOffset.UtcNow);
+                doc.RegisteredAt.Value);
         }
         catch (Exception exception)
         {
@@ -77,11 +81,4 @@ public sealed class CloudKktFiscalProvider(
         }
     }
 
-    private sealed record CloudKktResponse(
-        long FiscalDocumentNumber,
-        string FiscalStorageNumber,
-        string FiscalAttribute,
-        string? FiscalSign,
-        string QrPayload,
-        DateTimeOffset? RegisteredAt);
 }

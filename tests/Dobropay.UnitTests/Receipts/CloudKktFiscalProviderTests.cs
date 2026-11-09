@@ -137,6 +137,38 @@ public sealed class CloudKktFiscalProviderTests
         Assert.NotNull(result.ErrorMessage);
     }
 
+    [Fact]
+    public async Task RegisterReceiptAsync_WithoutRegistrationTime_ReturnsFailedResult()
+    {
+        var options = new ReceiptsOptions
+        {
+            EmailServiceBaseUrl = "http://email:8080",
+            InternalServiceKey = "key",
+            PaymentsServiceBaseUrl = "http://payments:8080",
+            FiscalCloudKktBaseUrl = TestCloudKktUrl,
+            FiscalCloudKktApiKey = TestApiKey
+        };
+        var handler = new TestHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {"fiscalDocumentNumber":5055,"fiscalStorageNumber":"9999078900055555","fiscalAttribute":"5555555555","qrPayload":"valid"}
+                """, System.Text.Encoding.UTF8, DomainConstants.ApplicationJsonContentType)
+        });
+        var provider = new CloudKktFiscalProvider(
+            new TestHttpClientFactory(new HttpClient(handler)),
+            options,
+            NullLogger<CloudKktFiscalProvider>.Instance);
+        var command = new FiscalRegistrationCommand(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null,
+            ReceiptTypes.Payment, 10000, DomainConstants.DefaultCurrency,
+            DomainConstants.DefaultTaxSystemCode, null, null, Array.Empty<ReceiptItemDto>());
+
+        var result = await provider.RegisterReceiptAsync(command, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.NotNull(result.ErrorMessage);
+    }
+
     private sealed class TestHttpClientFactory(HttpClient client) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => client;
